@@ -117,7 +117,7 @@ function changeFloor(key, arrive) {
 
 // ---------------------------------------------------------------- story context
 const ctx = {
-  audio, ui, player, monster, maya, scene, fx,
+  audio, ui, player, monster, maya, scene, fx, camera,
   get save() { return game.save; },
   get floor() { return game.floor; },
   get settings() { return settings; },

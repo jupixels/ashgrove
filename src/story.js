@@ -532,6 +532,16 @@ export function createStory(ctx) {
       sight.timer += dt;
       monster.group.lookAt(player.position.x, 0, player.position.z);
       const dist = monster.distanceTo(player.position);
+      // the ones that wait behind you: the moment you turn and see it, it screams and is gone
+      if (sight.current.behind && sight.timer > 0.15 && player.facingFlat(monster.group.position) > 0.88 && dist < 16) {
+        sight.current = null;
+        sight.cooldown = 8;
+        scare(0.9);
+        blackout(0.25);
+        monster.group.visible = false;
+        monster.mode = 'off';
+        return;
+      }
       if (player.facingFlat(monster.group.position) > 0.93 && player.flashOn && dist < 14) sight.lit += dt;
       if (sight.lit > 1.6 || dist < 3.2 || sight.timer > 12) {
         sight.current = null;
@@ -640,25 +650,57 @@ export function createStory(ctx) {
   }
 
   // ---------------------------------------------------------------- dying
+  // getting caught: no slash from across the room. Its face lunges into yours, fills the screen and screams.
+  let deathScare = null; // runs every frame while it plays
   story.caught = (how) => {
     if (story.dying) return;
     story.dying = true;
     story.gen++;
     stopAllLoops();
+    sight.current = null;
     player.frozen = true;
     if (player.hidden) player.unhide();
+    player.setPhone(false);
+    const cam = ctx.camera, calm = ctx.settings.reduceFlashing;
+    const dir = player.forward();
+    dir.y = 0;
+    dir.normalize();
     monster.mode = 'script';
-    monster.show(aheadOf(0.9), player.position);
-    monster.anim('attack', { fade: 0.05, speed: 1.6, once: true });
+    monster.show(aheadOf(1), player.position);
+    monster.anim('roar', { fade: 0, speed: 1.6, once: true });
     audio.play('jumpscare_sting_2', { volume: 1 });
+    audio.play('jumpscare_sting_1', { volume: 0.8 });
     audio.play('monster_scream', { volume: 1 });
-    if (!ctx.settings.lessGore) audio.play('kill_grab_gore', { volume: 1 });
-    ctx.fx.shake = 1;
-    ctx.fx.aberration = ctx.settings.reduceFlashing ? 0.4 : 1.5;
     ctx.fx.red = ctx.settings.lessGore ? 0.3 : 0.8;
     const text = { dragged: 'It saw where you hid.', breath: 'It heard you breathing.', caught: 'It caught you.' }[how] || 'It caught you.';
-    setTimeout(() => { ctx.fx.fade = 1; ctx.fx.fadeTarget = 1; monster.group.visible = false; }, 500);
-    setTimeout(() => ctx.died(text), 2000);
+    const head = V(), want = V();
+    let t = 0;
+    const jolt = () => (Math.random() - 0.5) * (calm ? 0.015 : 0.06);
+    deathScare = (dt) => {
+      t += dt;
+      // from arm's length to right in your face in a blink, then it stays there, shaking and screaming
+      const d = t < 0.13 ? 0.95 - 0.67 * (t / 0.13) ** 2 : 0.28;
+      want.copy(cam.position).addScaledVector(dir, d);
+      if (t > 0.13) want.add(V(jolt(), jolt() * 0.7, jolt()));
+      monster.group.lookAt(cam.position.x, monster.group.position.y, cam.position.z);
+      monster.headPos(head);
+      monster.group.position.add(want.clone().sub(head)); // move the whole body so its face lands there
+      monster.headPos(head);
+      cam.lookAt(head.x, head.y + 0.07, head.z);
+      monster.light = { intensity: 7, at: cam.position.clone().addScaledVector(dir, 0.08).setY(cam.position.y - 0.4) }; // lit from under the chin
+      ctx.fx.shake = calm ? 0.25 : 1.1;
+      ctx.fx.aberration = calm ? 0.4 : 1.2 + Math.random() * 0.8;
+      if (t > 1.3) {
+        deathScare = null;
+        monster.light = null;
+        monster.group.visible = false;
+        ctx.fx.fade = 1;
+        ctx.fx.fadeTarget = 1;
+        ctx.fx.shake = 0;
+        if (!ctx.settings.lessGore) audio.play('kill_grab_gore', { volume: 1 });
+        setTimeout(() => ctx.died(text), 900);
+      }
+    };
   };
 
   // ---------------------------------------------------------------- per frame
@@ -666,6 +708,7 @@ export function createStory(ctx) {
     story.time += dt;
     const due = waits.filter((x) => x.t <= story.time);
     if (due.length) { waits = waits.filter((x) => x.t > story.time); due.forEach((x) => x.res()); }
+    if (deathScare) { deathScare(dt); return; }
     const f = floor();
     if (!f) return;
     for (const k in loops) {
@@ -723,7 +766,7 @@ export function createStory(ctx) {
     return cards;
   };
 
-  story.reset = () => { story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
+  story.reset = () => { deathScare = null; monster.light = null; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
   return story;
 }
 

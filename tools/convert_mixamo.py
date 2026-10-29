@@ -7,7 +7,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = os.path.join(ROOT, 'assets', 'raw', 'characters')
 CHARACTERS = {
     # the Ch25 creature with the downloaded mutant/zombie animations
-    'monster': dict(folder='mixamo', character='Ch25_nonPBR.fbx', out='monster.glb',
+    'monster': dict(folder='mixamo', character='Ch25_nonPBR.fbx', out='monster.glb', slim=0.62,
                     anims=['idle', 'walk', 'run', 'roar', 'attack', 'crawl', 'search']),
     # Maya (Ch02): walking, breathing idle, and scared idle for when it's close
     'maya': dict(folder='maya', character='Ch02_nonPBR.fbx', out='maya.glb',
@@ -26,6 +26,36 @@ rig = next(o for o in bpy.context.scene.objects if o.type == 'ARMATURE')
 rig.name = name.capitalize()
 if rig.animation_data and rig.animation_data.action:
     bpy.data.actions.remove(rig.animation_data.action)
+
+# Slim the body: pull every vertex in toward the bone it follows, across the bone only (never along it), so
+# limbs and torso get thinner but keep their length and still fit every animation. The head, hands and feet
+# are thinned less so the face and claws keep their shape.
+def slim(rig, amount):
+    bones = rig.data.bones
+    keep = lambda n: 0.85 if any(k in n for k in ('Head', 'Neck')) else 0.8 if any(k in n for k in ('Hand', 'Foot', 'Toe')) else 0.0
+    for ob in [o for o in bpy.data.objects if o.type == 'MESH']:
+        to_rig = rig.matrix_world.inverted() @ ob.matrix_world
+        back = to_rig.inverted()
+        names = {g.index: g.name for g in ob.vertex_groups}
+        for v in ob.data.vertices:
+            p = to_rig @ v.co
+            moved, total = None, 0.0
+            for g in v.groups:
+                b = bones.get(names.get(g.group, ''))
+                if not b or g.weight <= 0:
+                    continue
+                axis = (b.tail_local - b.head_local).normalized()
+                on_axis = b.head_local + axis * (p - b.head_local).dot(axis)
+                f = amount + (1 - amount) * keep(b.name)
+                q = (on_axis + (p - on_axis) * f) * g.weight
+                moved = q if moved is None else moved + q
+                total += g.weight
+            if total > 0:
+                v.co = back @ (moved / total)
+
+
+if cfg.get('slim'):
+    slim(rig, cfg['slim'])
 
 # Only colour maps go to the game (it uses simple lit materials): unhook everything but Base Color
 # (and Alpha, for hair) so normal/specular/gloss maps aren't exported, then shrink what is left.

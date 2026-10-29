@@ -327,6 +327,92 @@ export function buildFloor(key, def, A, opts = {}) {
     interact({ id: `payphone:${x},${z}`, pos: w.pos.clone().setY(1.4), radius: 0.5, label: () => '[E] Use payphone (save progress)', use: () => floor.onUse && floor.onUse('payphone', { x, z }) });
   }
 
+  // ---------------------------------------------------------------- a body under a sheet, on a gurney
+  // The sheet is draped over a rough body shape (head, chest, hips, legs, feet tenting it up) and hangs over
+  // the gurney's sides. One grey arm has slipped out and hangs down, a keycard still in its fingers.
+  // Returns the keycard mesh (null if it's already been taken).
+  function corpse(c, rotY, cardTaken) {
+    const TOP = 0.69, LEN = 2.0, WID = 0.95, HALF = 0.37; // gurney top height and half width
+    const parts = [ // [along (m from the head end), across, half-length, half-width, height]
+      [0.14, 0, 0.12, 0.1, 0.19], [0.5, 0, 0.3, 0.22, 0.2], [0.86, 0, 0.16, 0.2, 0.16],
+      [1.3, -0.1, 0.42, 0.08, 0.12], [1.3, 0.1, 0.42, 0.08, 0.12], [1.78, -0.11, 0.06, 0.06, 0.2], [1.78, 0.11, 0.06, 0.06, 0.2],
+    ];
+    const NX = 14, NZ = 32;
+    const body = (s, x) => {
+      let h = 0;
+      for (const [ps, px, rs, rx, ph] of parts) {
+        const k = 1 - ((s - ps) / rs) ** 2 - ((x - px) / rx) ** 2;
+        if (k > 0) h = Math.max(h, ph * Math.sqrt(k));
+      }
+      return h;
+    };
+    const geo = new THREE.PlaneGeometry(WID, LEN, NX, NZ);
+    geo.rotateX(-Math.PI / 2);
+    const P = geo.attributes.position;
+    const base = [], H = [];
+    for (let i = 0; i < P.count; i++) { base[i] = body(P.getZ(i) + LEN / 2, P.getX(i)); H[i] = base[i]; }
+    // the cloth rests on the high points and sags between them (feet tent it, it dips between the legs)
+    const at = (ix, iz) => H[iz * (NX + 1) + ix];
+    for (let pass = 0; pass < 5; pass++) {
+      const next = H.slice();
+      for (let iz = 0; iz <= NZ; iz++) for (let ix = 0; ix <= NX; ix++) {
+        const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dz]) => at(Math.min(NX, Math.max(0, ix + dx)), Math.min(NZ, Math.max(0, iz + dz))));
+        const i = iz * (NX + 1) + ix;
+        next[i] = Math.max(base[i], (n.reduce((a, v) => a + v, 0) / 4) * 0.93);
+      }
+      H.splice(0, H.length, ...next);
+    }
+    const colors = [];
+    const cloth = new THREE.Color(0xb8b4a6), blood = new THREE.Color(0x4a0606), tmpC = new THREE.Color();
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i), s = P.getZ(i) + LEN / 2;
+      const over = Math.max(0, Math.abs(x) - HALF); // past the gurney edge it falls away
+      P.setY(i, TOP + H[i] - over * 3.2 + Math.random() * 0.006);
+      // old blood soaked through at the chest and the head
+      const stain = lessGore ? 0 : Math.max(0, 1 - Math.hypot((s - 0.52) / 0.2, (x - 0.06) / 0.16)) + 0.6 * Math.max(0, 1 - Math.hypot((s - 0.12) / 0.1, x / 0.1));
+      tmpC.copy(cloth).lerp(blood, Math.min(1, stain * 1.6 + (Math.random() < stain ? 0.3 : 0)));
+      colors.push(tmpC.r, tmpC.g, tmpC.b);
+    }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geo.computeVertexNormals();
+    const g = new THREE.Group();
+    const sheet = new THREE.Mesh(geo, psx(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide, flatShading: true })));
+    sheet.castShadow = sheet.receiveShadow = true;
+    g.add(sheet);
+    // the arm that slipped out, hanging over the side
+    const skin = psx(new THREE.MeshLambertMaterial({ color: 0x8a8f86 }));
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.5, 6), skin);
+    arm.position.set(HALF + 0.07, TOP - 0.2, 0.36 - LEN / 2);
+    arm.rotation.z = -0.12;
+    g.add(arm);
+    const hand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.13, 0.09), skin);
+    hand.position.set(HALF + 0.1, TOP - 0.5, 0.36 - LEN / 2);
+    hand.rotation.z = -0.12;
+    g.add(hand);
+    for (let i = 0; i < 4; i++) { // curled fingers
+      const finger = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.06, 0.018), skin);
+      finger.position.set(HALF + 0.095, TOP - 0.59, 0.36 - LEN / 2 - 0.032 + i * 0.021);
+      finger.rotation.z = 0.4;
+      g.add(finger);
+    }
+    let card = null;
+    if (!cardTaken) {
+      card = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.054, 0.085), new THREE.MeshBasicMaterial({ color: 0xb01818 }));
+      card.position.set(HALF + 0.13, TOP - 0.6, 0.36 - LEN / 2 + 0.02);
+      card.rotation.z = 0.3;
+      g.add(card);
+    }
+    g.position.copy(c);
+    g.rotation.y = rotY;
+    add(g);
+    g.updateMatrixWorld(true);
+    if (!lessGore) { // it has been dripping off the fingers for a while
+      const drip = g.localToWorld(new THREE.Vector3(HALF + 0.12, 0, 0.36 - LEN / 2));
+      decal(A.tex.blood[1], 0.7, 0.7, drip.setY(0.014), -Math.PI / 2, 1.3);
+    }
+    return card;
+  }
+
   // ---------------------------------------------------------------- noisy things: trays and broken glass
   function tray(x, z) {
     const c = cellCenter(x, z);
@@ -499,12 +585,10 @@ export function buildFloor(key, def, A, opts = {}) {
       interact({ id: 'drawer13', pos: new THREE.Vector3(f.pos.x + 0.3, 0.6, dz), radius: 0.5, label: () => (floor.objects.drawer13.opened ? null : '[E] Open drawer 13 (it is breathing)'), use: () => floor.onUse('drawer13') });
     } else if (o.type === 'body') {
       prop('gurney', c, Math.PI / 2);
-      const sheet = box(1.6, 0.25, 0.55, mat.sheet, c.x, 1.25, c.z, Math.PI / 2);
-      sheet.scale.set(1, 1, 1);
-      if (!lessGore) decal(A.tex.blood[1], 0.9, 0.9, c.clone().setY(1.39), -Math.PI / 2, 0.3);
-      floor.objects.body = { sheet };
+      const card = corpse(c, Math.PI / 2, taken.has(id(o.x, o.z)));
+      floor.objects.body = { card };
       if (!taken.has(id(o.x, o.z))) {
-        interact({ id: 'body', pos: c.clone().setY(1.3), radius: 0.8, label: () => (taken.has(id(o.x, o.z)) ? null : '[E] Search the body (Dr. Harlan)'), use: () => { taken.add(id(o.x, o.z)); floor.onPickup('keycard', { kind: 'keycard', key: 'red' }, id(o.x, o.z)); } });
+        interact({ id: 'body', pos: c.clone().setY(0.8), radius: 0.9, label: () => (taken.has(id(o.x, o.z)) ? null : '[E] Search the body (Dr. Harlan)'), use: () => { taken.add(id(o.x, o.z)); if (card) card.visible = false; floor.onPickup('keycard', { kind: 'keycard', key: 'red' }, id(o.x, o.z)); } });
       }
     } else if (o.type === 'boiler') {
       const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 3.2, 10), mat.rust);

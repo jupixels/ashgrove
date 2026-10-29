@@ -103,6 +103,15 @@ export function createMonster({ A, scene, audio }) {
     else anim('walk');
   };
 
+  // where its face is (the death scare frames it)
+  let head = null;
+  model.traverse((o) => { if (o.isBone && /Head$/.test(o.name)) head = o; });
+  m.headPos = (out = new THREE.Vector3()) => {
+    group.updateMatrixWorld(true);
+    return head ? head.getWorldPosition(out) : out.copy(group.position).setY(2.2);
+  };
+  m.light = null; // a story scene can take over its glow: { intensity, at }
+
   m.distanceTo = (v) => Math.hypot(group.position.x - v.x, group.position.z - v.z);
 
   // somebody made a noise of this loudness (metres it carries)
@@ -139,8 +148,8 @@ export function createMonster({ A, scene, audio }) {
   // ---------------------------------------------------------------- the hunt
   m.update = (dt, player, events) => {
     if (group.visible) mixer.update(dt);
-    presence.intensity = group.visible ? 2.6 : 0;
-    if (group.visible) presence.position.copy(group.localToWorld(tmp.set(0, 1.9, 1.0)));
+    presence.intensity = group.visible ? (m.light ? m.light.intensity : 2.6) : 0;
+    if (group.visible) presence.position.copy(m.light ? m.light.at : group.localToWorld(tmp.set(0, 1.9, 1.0)));
     if (m.mode !== 'ai' || !player) return;
 
     const f = m.floor;
