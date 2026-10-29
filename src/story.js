@@ -37,7 +37,7 @@ export function createStory(ctx) {
     return s;
   }
   function walkie(name, text, guess = 4) {
-    audio.play('walkie_static', { volume: 0.7 });
+    audio.play('walkie_static', { volume: 1 }); // the walkie crackling on
     setTimeout(() => voice(name, 'Maya (walkie)', text, guess, 'whisper'), 500);
   }
   function objective(text) { S().objective = text; ui.objective(text); }
@@ -194,7 +194,7 @@ export function createStory(ctx) {
     }
     if (kind === 'locker') { player.hide(data); return; }
     if (kind === 'payphone') {
-      audio.play('walkie_static', { volume: 0.3 });
+      audio.play('walkie_static', { volume: 0.15 });
       ctx.checkpoint({ x: player.position.x, z: player.position.z, yaw: player.yaw() });
       ui.message('No dial tone. Just breathing on the line... (progress saved)', 3500);
       return;

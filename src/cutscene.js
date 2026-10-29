@@ -83,12 +83,13 @@ function buildExterior(psx) {
   doorway.position.set(14, 1.2, -29.93);
   s.add(doorway);
   const door = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.35, 0.06), lam({ color: 0x3a3b36 }));
-  door.geometry.translate(0.675, 0, 0);
-  door.position.set(13.3, 1.18, -29.9);
-  door.rotation.y = 0.75;
+  // hinged on the right of the doorway and swung outward (away from the wall and the camera)
+  door.geometry.translate(-0.675, 0, 0);
+  door.position.set(14.7, 1.18, -29.85);
+  door.rotation.y = 2.0;
   s.add(door);
   const brick = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.1), lam({ color: 0x6a2a1a }));
-  brick.position.set(14.1, 0.04, -29.4);
+  brick.position.set(15.15, 0.04, -28.55); // wedged under its outer edge
   s.add(brick);
 
   // wet asphalt with puddles
@@ -738,7 +739,7 @@ export function createIntro(ctx) {
         this.dur = walkieAt + len('maya_walkie_1', 9) + 1.4;
         this.endAt = this.dur - 0.8;
         line('sam_walkie', 'Sam', 'Maya?! Maya, where are you?!', 2.2);
-        later(() => audio.play('walkie_static', { volume: 0.8 }), (walkieAt - 0.5) * 1000);
+        later(() => audio.play('walkie_static', { volume: 1 }), (walkieAt - 0.5) * 1000); // the walkie crackling on
         later(() => line('maya_walkie_1', 'Maya (walkie)',
           "Sam... it took me upstairs... it's sewing something... Please. Find the keycards. Get the lockdown off.", 9, 'whisper'),
         walkieAt * 1000);

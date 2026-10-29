@@ -37,7 +37,7 @@
     #pause .stats { color: #8a8576; margin: 6px 0 22px; font-size: 15px; }
     #objective { position: fixed; top: 28px; left: 32px; font-size: 18px; opacity: 0; color: #cfc8b2; text-shadow: 0 0 6px #000; max-width: 60vw; }
     #objective.show { animation: objective 7s forwards; }
-    #prompt { position: fixed; top: 58%; width: 100%; text-align: center; font-size: 16px; color: #e8e2cf; text-shadow: 0 0 4px #000; pointer-events: none; }
+    #prompt { position: fixed; top: 58%; width: 100%; text-align: center; font-size: 16px; color: #e8e2cf; text-shadow: 0 0 4px #000, 0 0 2px #000; pointer-events: none; z-index: 6; }
     #message { position: fixed; bottom: 13%; width: 100%; text-align: center; font-size: clamp(16px, 2vw, 21px); opacity: 0; transition: opacity 0.6s; text-shadow: 0 0 6px #000, 0 0 2px #000; padding: 0 16px; box-sizing: border-box; pointer-events: none; z-index: 6; }
     #message .who { color: #e8b04a; }
     #message .whisper { font-style: italic; color: #b8c8d8; }
@@ -47,7 +47,7 @@
     #stamina { position: fixed; bottom: 32px; left: 50%; width: 220px; height: 4px; margin-left: -110px; background: rgba(0,0,0,0.6); border: 1px solid rgba(200,195,175,0.35); opacity: 0; transition: opacity 0.8s; }
     #staminaFill { height: 100%; width: 100%; background: #cfc8b2; transition: background 0.3s; }
     #stamina.tired #staminaFill { background: #8a1a1a; animation: pulse 0.6s infinite; }
-    #breath { position: fixed; bottom: 46px; left: 50%; width: 220px; height: 6px; margin-left: -110px; background: rgba(0,0,0,0.6); border: 1px solid rgba(140,180,220,0.4); opacity: 0; transition: opacity 0.4s; }
+    #breath { z-index: 6; position: fixed; bottom: 46px; left: 50%; width: 220px; height: 6px; margin-left: -110px; background: rgba(0,0,0,0.6); border: 1px solid rgba(140,180,220,0.4); opacity: 0; transition: opacity 0.4s; }
     #breathFill { height: 100%; background: #8fb4d8; }
     #breath.held #breathFill { background: #d8e8ff; }
     #hold { position: fixed; top: 62%; left: 50%; width: 160px; height: 4px; margin-left: -80px; background: rgba(0,0,0,0.6); opacity: 0; }
@@ -58,9 +58,10 @@
     #chapter { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1.5s; z-index: 4; }
     #chapter .t { font-size: clamp(30px, 6vw, 64px); letter-spacing: 0.2em; text-shadow: 3px 0 #500, -3px 0 #022; }
     #chapter .s { color: #8a8576; letter-spacing: 0.4em; margin-top: 8px; }
+    /* inside a locker: thin, slightly see-through slats you can watch the room through */
     #locker { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3;
-      background: repeating-linear-gradient(to bottom, #000 0, #000 22px, transparent 22px, transparent 34px); }
-    #locker::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, #000 0, transparent 22%, transparent 78%, #000 100%); }
+      background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.82) 0, rgba(0,0,0,0.82) 9px, transparent 9px, transparent 30px); }
+    #locker::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.9) 0, transparent 12%, transparent 88%, rgba(0,0,0,0.9) 100%); }
     #phone { position: fixed; inset: 5vh 8vw; pointer-events: none; display: none; z-index: 3; border: 2px solid rgba(220,255,220,0.5); font-family: 'Courier New', monospace; color: #d8ffd8; text-shadow: 0 0 3px #000; }
     #phone .rec { position: absolute; top: 10px; left: 12px; }
     #phone .rec::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e01010; margin-right: 6px; animation: pulse 1s steps(1) infinite; }

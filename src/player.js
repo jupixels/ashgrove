@@ -104,13 +104,16 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     setTimeout(() => audio.play('locker_close_hide', { volume: 0.5 }), 350);
     camera.position.copy(locker.inside);
     camera.rotation.set(0, locker.yaw, 0, 'YXZ');
-    p.flashOn = false;
+    locker.group.children.slice(1).forEach((slat) => (slat.visible = false)); // the overlay draws the slats from inside
+    locker.group.children[0].castShadow = false; // or the locker you're standing in blocks your own light
     ui.locker(true);
   };
   p.unhide = () => {
     if (!p.hidden) return;
     const l = p.hidden;
     p.hidden = null;
+    l.group.children.slice(1).forEach((slat) => (slat.visible = true));
+    l.group.children[0].castShadow = true;
     audio.play('locker_open', { volume: 0.7 });
     camera.position.set(l.outside.x, EYE, l.outside.z);
     p.breathHeld = false;
