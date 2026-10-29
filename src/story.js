@@ -25,11 +25,15 @@ export function createStory(ctx) {
   // ---------------------------------------------------------------- helpers
   const wait = (s) => new Promise((res) => waits.push({ t: story.time + s, res }));
   // run a scripted sequence; it quietly stops if the floor changes or you die
+  let running = 0, runningGen = 0; // scenes playing right now (on this floor)
   function scene(fn) {
     const gen = story.gen;
+    if (runningGen !== gen) { running = 0; runningGen = gen; }
+    running++;
     const w = async (s) => { await wait(s); if (gen !== story.gen) throw STOP; };
-    fn(w).catch((e) => { if (e !== STOP) console.error(e); });
+    fn(w).catch((e) => { if (e !== STOP) console.error(e); }).finally(() => { if (runningGen === gen) running--; });
   }
+  story.busy = () => story.dying || (runningGen === story.gen && running > 0);
   const len = (name, guess) => (audio.buffers && audio.buffers[name] ? audio.buffers[name].duration : guess);
   function voice(name, who, text, guess = 3, cls = '') {
     const s = audio.play(name, { volume: 1 });

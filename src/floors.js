@@ -38,13 +38,13 @@ const PROTOTYPE = [
 
 const F1 = grid(46, 16, PROTOTYPE)
   .room(29, 5, 12, 2)            // corridor east
-  .room(41, 1, 3, 10)            // stairwell
+  .room(41, 1, 3, 9)             // stairwell (row 10 stays wall: the restroom is on the other side)
   .room(31, 1, 6, 3)             // security office
   .room(29, 8, 9, 5)             // cafeteria
   .room(39, 11, 4, 4)            // restroom
   .put([
     [40, 5, 'D'], [40, 6, '#'], [33, 4, 'D'], [31, 7, 'D'], [38, 12, 'D'],
-    [42, 1, '^'], [42, 10, 'v'],
+    [42, 1, '^'], [42, 9, 'v'],
     [1, 7, 'Q'],
     [11, 6, 'H'], [26, 5, 'H'], [35, 6, 'H'], [31, 3, 'H'], [34, 12, 'H'],
     [34, 2, 'L'], [31, 10, 'L'], [35, 10, 'L'], [40, 12, 'F'], [42, 5, 'L'], [37, 6, 'F'], [32, 5, 'L'],
@@ -56,7 +56,7 @@ const F1 = grid(46, 16, PROTOTYPE)
 
 // ---------------------------------------------------------------- B1: morgue and boiler room
 const B1 = grid(34, 17)
-  .room(1, 1, 4, 4)              // stair landing
+  .room(1, 1, 4, 3)              // stair landing (row 4 stays wall: the morgue is on the other side)
   .room(5, 2, 26, 2)             // corridor
   .room(4, 5, 10, 9)             // morgue
   .room(15, 5, 4, 6)             // storage
@@ -112,7 +112,7 @@ const F3 = grid(40, 15)
     [6, 2, 'L'], [15, 2, 'F'], [33, 9, 'L'], [2, 5, 'L'], [24, 9, 'R'],
     [6, 8, 'B'], [9, 8, 'B'], [12, 8, 'B'], [15, 8, 'B'], [6, 11, 'B'], [9, 11, 'B'], [12, 11, 'B'], [15, 11, 'B'],
     [7, 7, 'm'], [10, 7, 'm'], [13, 7, 'm'], [7, 12, 'm'], [10, 12, 'm'], [13, 12, 'm'],
-    [8, 1, 'O'], [17, 1, 'O'], [10, 2, 't'], [19, 2, 't'], [31, 10, 'c'], [35, 7, 'c'],
+    [8, 1, 'O'], [17, 1, 'O'], [10, 2, 't'], [19, 2, 't'], [30, 10, 'c'], [35, 7, 'c'],
     [29, 1, 'k'], [24, 2, 'T'], [34, 10, 'T'], [30, 2, 'N'], [32, 8, 'N'], [11, 2, 'N'],
     [27, 9, 'b'], [36, 10, 'b'], [5, 5, 'g'], [26, 5, 'X'], [11, 10, 'X'],
     [6, 5, '1'], [20, 5, '2'], [34, 5, '3'], [10, 10, '4'], [25, 9, '5'], [33, 9, '6'],
@@ -123,7 +123,7 @@ const F4 = grid(36, 14)
   .room(1, 1, 3, 8)              // stairwell
   .room(4, 4, 28, 2)             // corridor
   .room(5, 1, 8, 2).room(15, 1, 8, 2)   // wards
-  .room(4, 7, 7, 6).room(24, 7, 7, 6)   // wards
+  .room(5, 7, 6, 6).room(24, 7, 7, 6)   // wards (column 4 stays wall: the stairwell is on the other side)
   .room(13, 7, 9, 6)             // operating theatre
   .room(32, 1, 3, 9)             // roof stairwell
   .put([
@@ -152,7 +152,7 @@ export const FLOORS = {
     ambience: 'rain_outside_muffled',   // the storm outside, through the walls
     arrive: {
       start: { x: 12.4, z: 12.3, yaw: yawEast },          // where the opening cutscene leaves you
-      fromBelow: cell(42, 9, yawNorth),
+      fromBelow: cell(42, 8, yawNorth),
       fromAbove: cell(42, 2, yawSouth),
       elevator: cell(38, 5, yawSouth),
     },

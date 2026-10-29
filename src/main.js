@@ -60,8 +60,26 @@ applySettings();
 // ---------------------------------------------------------------- saving
 function persist() {
   game.save.taken = [...game.taken];
+  // where you are right now, so Continue puts you back on the exact spot (dying still goes back to the checkpoint)
+  if (game.state === 'playing' && game.floor && !story.dying) {
+    const pos = player.hidden ? player.hidden.outside : camera.position;
+    game.save.resume = { floor: game.floor.key, x: pos.x, z: pos.z, yaw: camera.rotation.y, battery: player.battery };
+  }
   SAVE.writeSave(game.save);
 }
+
+// autosave every few seconds, whenever nothing is mid-way through happening
+let autosaveT = 0;
+const calm = () => game.state === 'playing' && !player.frozen && !story.busy() && !(monster.mode === 'ai' && monster.state === 'chase');
+function autosave(dt) {
+  autosaveT += dt;
+  if (autosaveT < 5 || !calm()) return;
+  autosaveT = 0;
+  persist();
+}
+const saveNow = () => { if (calm()) persist(); }; // otherwise the last autosave stands
+addEventListener('pagehide', saveNow);
+document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
 
 // ---------------------------------------------------------------- floors
 let ambienceLoop = null;
@@ -90,6 +108,7 @@ function changeFloor(key, arrive) {
   setTimeout(() => {
     game.save.floor = key;
     game.save.checkpoint = arrive;
+    game.save.resume = null;
     loadFloor(key, arrive);
     persist(); // arriving somewhere new is a checkpoint
     fx.fadeTarget = 0;
@@ -123,7 +142,7 @@ function died(text) {
   monster.mode = 'off';
   monster.group.visible = false;
   const disk = SAVE.loadSave();
-  if (disk) { disk.deaths = (disk.deaths || 0) + 1; SAVE.writeSave(disk); }
+  if (disk) { disk.deaths = (disk.deaths || 0) + 1; disk.resume = null; SAVE.writeSave(disk); }
   ui.hud(false);
   controls.unlock();
   ui.death(text, retry, toMenu);
@@ -227,7 +246,11 @@ function continueGame() {
     game.taken = new Set(game.save.taken || []);
     resetFx();
     story.reset();
-    loadFloor(game.save.floor, game.save.checkpoint);
+    const r = game.save.resume;
+    if (r && r.floor === game.save.floor) {
+      loadFloor(game.save.floor, { x: r.x, z: r.z, yaw: r.yaw });
+      player.battery = r.battery ?? player.battery;
+    } else loadFloor(game.save.floor, game.save.checkpoint);
     startPlaying();
   });
 }
@@ -256,13 +279,13 @@ function showPause() {
     stats: pauseStats(),
     onResume: () => { ui.pauseMenu(false); controls.lock(); },
     onSettings: () => { ui.pauseMenu(false); openSettings(showPause); },
-    onQuit: () => { ui.pauseMenu(false); persist(); toMenu(); },
+    onQuit: () => { ui.pauseMenu(false); saveNow(); toMenu(); },
   });
 }
 
 controls.addEventListener('lock', () => { ui.pauseMenu(false); ui.hud(game.state === 'playing'); });
 controls.addEventListener('unlock', () => {
-  if (game.state === 'playing' && !game.overlay) showPause();
+  if (game.state === 'playing' && !game.overlay) { saveNow(); showPause(); }
 });
 
 // ---------------------------------------------------------------- input
@@ -310,6 +333,7 @@ function simulate(dt) {
   story.update(dt);
   game.floor.update(dt);
   updateDread(dt);
+  autosave(dt);
 }
 
 function render(dt, t) {

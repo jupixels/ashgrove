@@ -20,6 +20,7 @@ function materials(A) {
     parapet: lam({ color: 0x4a4844 }),
     metal: lam({ color: 0x55534c }),
     steel: lam({ map: A.tex.metal, color: 0x8a8a84 }),
+    steelPanel: lam({ map: A.tex.metal, color: 0x8a8a84, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }), // flat on a wall
     rust: lam({ color: 0x4a3324 }),
     locker: lam({ map: A.tex.metal, color: 0x5d6b62 }),
     table: lam({ map: A.tex.metal, color: 0x8a7a66 }),
@@ -111,9 +112,10 @@ export function buildFloor(key, def, A, opts = {}) {
   function decal(texture, w, h, pos, rotX, rotY, layer = 0) {
     const m = new THREE.Mesh(
       new THREE.PlaneGeometry(w, h),
-      psx(new THREE.MeshLambertMaterial({ map: texture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }))
+      psx(new THREE.MeshLambertMaterial({ map: texture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }))
     );
     m.position.copy(pos);
+    m.renderOrder = 1 + pos.y; // overlapping decals always stack the same way (the higher one on top)
     m.rotation.set(rotX, rotY, 0, 'YXZ');
     if (layer) m.layers.set(layer);
     return add(m);
@@ -123,10 +125,10 @@ export function buildFloor(key, def, A, opts = {}) {
   // a point on the face of wall cell (x, z), and the rotation that faces out of it
   function wallFace(x, z, face, y) {
     const c = cellCenter(x, z).setY(y);
-    if (face === 'south') return { pos: c.setZ((z + 1) * CELL + 0.02), rotY: 0 };
-    if (face === 'north') return { pos: c.setZ(z * CELL - 0.02), rotY: Math.PI };
-    if (face === 'east') return { pos: c.setX((x + 1) * CELL + 0.02), rotY: Math.PI / 2 };
-    return { pos: c.setX(x * CELL - 0.02), rotY: -Math.PI / 2 };
+    if (face === 'south') return { pos: c.setZ((z + 1) * CELL + 0.04), rotY: 0 };
+    if (face === 'north') return { pos: c.setZ(z * CELL - 0.04), rotY: Math.PI };
+    if (face === 'east') return { pos: c.setX((x + 1) * CELL + 0.04), rotY: Math.PI / 2 };
+    return { pos: c.setX(x * CELL - 0.04), rotY: -Math.PI / 2 };
   }
 
   // put something against whichever wall borders cell (x, z), facing into the room
@@ -378,9 +380,10 @@ export function buildFloor(key, def, A, opts = {}) {
       else if (ch === 'T') pickup(x, z, 'tape');
       else if (ch === 'k') pickup(x, z, 'keycard');
       else if (ch >= '1' && ch <= '9') floor.waypoints[+ch - 1] = c;
+      if (ch === 'g') continue; // broken glass has its own decal
       if (ch === 'X' && !lessGore) decal(A.tex.blood[(x + z) % 3], 1.8, 1.8, c.clone().setY(0.01), -Math.PI / 2, Math.random() * 6);
       else if (walkable(x, z) && !floor.outdoor && Math.random() < 0.16) {
-        decal(A.tex.grime[(x * 7 + z) % 2], 1.6, 1.6, c.clone().add(new THREE.Vector3(jitter(1), 0.008, jitter(1))), -Math.PI / 2, Math.random() * 6);
+        decal(A.tex.grime[(x * 7 + z) % 2], 1.4, 1.4, c.clone().add(new THREE.Vector3(jitter(0.3), 0.008, jitter(0.3))), -Math.PI / 2, Math.random() * 6);
       }
     }
   }
@@ -392,7 +395,7 @@ export function buildFloor(key, def, A, opts = {}) {
     const oid = o.id || o.type;
     if (o.type === 'writing') {
       const f = wallFace(o.x, o.z, o.face, o.phoneOnly ? 1.4 : 1.6);
-      const d = decal(T.writingTex(o.text), 2.2, 0.55, f.pos, 0, f.rotY, o.phoneOnly ? PHONE_LAYER : 0);
+      const d = decal(T.writingTex(o.text), 1.9, 0.475, f.pos, 0, f.rotY, o.phoneOnly ? PHONE_LAYER : 0);
       if (lessGore && !o.phoneOnly) d.material.color.set(0x404040);
     } else if (o.type === 'drawing') {
       const f = wallFace(o.x, o.z, o.face, 1.3);
@@ -430,7 +433,7 @@ export function buildFloor(key, def, A, opts = {}) {
       interact({ id: 'vending', pos: w.pos.clone().addScaledVector(facing(w.rotY), 0.5).setY(0.2), radius: 0.5, label: () => (floor.objects.vending.done ? null : '[E] Something is under the machine...'), use: () => floor.onUse('vending') });
     } else if (o.type === 'exit') {
       const f = wallFace(o.x, o.z, 'north', 1.2);
-      const shutter = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), mat.steel);
+      const shutter = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), mat.steelPanel);
       shutter.position.copy(f.pos);
       shutter.rotation.y = f.rotY;
       add(shutter);
@@ -442,16 +445,16 @@ export function buildFloor(key, def, A, opts = {}) {
       interact({ id: 'exit', pos: f.pos.clone(), radius: 1.6, label: () => '[E] Main entrance', use: () => floor.onUse('exit') });
     } else if (o.type === 'elevator') {
       const f = wallFace(o.x, o.z, 'south', 1.15);
-      const doors = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.3), mat.steel);
+      const doors = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.3), mat.steelPanel);
       doors.position.copy(f.pos);
       doors.rotation.y = f.rotY;
       add(doors);
       const seam = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 2.3), mat.dark);
-      seam.position.copy(f.pos).add(new THREE.Vector3(0, 0, 0.005).applyAxisAngle(new THREE.Vector3(0, 1, 0), f.rotY));
+      seam.position.copy(f.pos).add(new THREE.Vector3(0, 0, 0.02).applyAxisAngle(new THREE.Vector3(0, 1, 0), f.rotY));
       seam.rotation.y = f.rotY;
       add(seam);
       const button = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.12), new THREE.MeshBasicMaterial({ color: 0x401010 }));
-      button.position.copy(f.pos).setY(1.3).add(new THREE.Vector3(1.0, 0, 0.01).applyAxisAngle(new THREE.Vector3(0, 1, 0), f.rotY));
+      button.position.copy(f.pos).setY(1.3).add(new THREE.Vector3(1.0, 0, 0.03).applyAxisAngle(new THREE.Vector3(0, 1, 0), f.rotY));
       button.rotation.y = f.rotY;
       add(button);
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.2), new THREE.MeshBasicMaterial({ map: T.signTex('ELEVATOR', '#202020', '#c0c0b0') }));
@@ -488,7 +491,7 @@ export function buildFloor(key, def, A, opts = {}) {
       front.material.transparent = false;
       const dz = (o.z + 3) * CELL + 1; // drawer 13 sits in the middle, low down
       const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.15), new THREE.MeshBasicMaterial({ map: T.signTex('13', '#d8d4c4', '#300') }));
-      plate.position.set(f.pos.x + 0.02, 0.75, dz);
+      plate.position.set(f.pos.x + 0.03, 0.92, dz);
       plate.rotation.y = f.rotY;
       add(plate);
       const drawer = box(0.05, 0.42, 0.6, mat.steel, f.pos.x + 0.03, 0.55, dz);
@@ -550,7 +553,7 @@ export function buildFloor(key, def, A, opts = {}) {
       lamp.target.position.set(c.x, 0, c.z);
       add(lamp.target);
       box(0.9, 0.1, 0.9, mat.steel, c.x, WALL_H - 0.05, c.z);
-      if (!lessGore) { decal(A.tex.blood[2], 1.4, 1.4, c.clone().setY(0.012), -Math.PI / 2, 1); decal(A.tex.blood[0], 0.8, 0.8, c.clone().setY(0.86).setZ(c.z + 0.5), -Math.PI / 2, 2); }
+      if (!lessGore) { decal(A.tex.blood[2], 1.4, 1.4, c.clone().setY(0.012), -Math.PI / 2, 1); decal(A.tex.blood[0], 0.8, 0.8, c.clone().setY(0.87).setZ(c.z + 0.5), -Math.PI / 2, 2); }
       floor.objects.mayaTable = { pos: c.clone(), lamp };
       interact({ id: 'mayaTable', pos: c.clone().setY(1.0), radius: 1.0, hold: 3, label: () => (floor.objects.mayaTable.freed ? null : '[Hold E] Cut the straps'), use: () => floor.onUse('mayaTable') });
     } else if (o.type === 'fireEscape') {

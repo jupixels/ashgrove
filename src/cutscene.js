@@ -56,14 +56,14 @@ function buildExterior(psx) {
     }
   });
   const wall = lam({ color: 0x3a3733 });
-  const building = new THREE.Mesh(new THREE.BoxGeometry(44, 14, 14), [wall, wall, wall, wall, lam({ map: facade }), wall]);
+  const building = new THREE.Mesh(new THREE.BoxGeometry(44, 14, 14, 22, 7, 1), [wall, wall, wall, wall, lam({ map: facade }), wall]);
   building.position.set(0, 7, -37);
   s.add(building);
 
   // the 4th floor window that is lit... until it isn't
-  const windowMat = new THREE.MeshBasicMaterial({ color: 0xd8c27a });
+  const windowMat = new THREE.MeshBasicMaterial({ color: 0xd8c27a, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   const litWindow = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.75), windowMat);
-  litWindow.position.set(-10.8, 11.96, -29.94);
+  litWindow.position.set(-10.8, 11.96, -29.88);
   s.add(litWindow);
 
   const sign = canvasTex(256, 24, (g, w, h) => {
@@ -74,13 +74,13 @@ function buildExterior(psx) {
     g.fillText('ASHGR VE  MEMORIAL  HOSP TAL', w / 2, 18);
     speckle(g, w, h, 120, 'rgba(90,40,10,0.7)', 2);
   });
-  const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(15, 1.4), lam({ map: sign, transparent: true }));
-  signMesh.position.set(0, 4.6, -29.9);
+  const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(15, 1.4), lam({ map: sign, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  signMesh.position.set(0, 4.6, -29.86);
   s.add(signMesh);
 
   // the side door, propped open with a brick
-  const doorway = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.4), new THREE.MeshBasicMaterial({ color: 0x000000 }));
-  doorway.position.set(14, 1.2, -29.93);
+  const doorway = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 2.4), new THREE.MeshBasicMaterial({ color: 0x000000, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  doorway.position.set(14, 1.2, -29.9);
   s.add(doorway);
   const door = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.35, 0.06), lam({ color: 0x3a3b36 }));
   // hinged on the right of the doorway and swung outward (away from the wall and the camera)
@@ -104,7 +104,7 @@ function buildExterior(psx) {
       g.fill();
     }
   }, [50, 50]);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), lam({ map: asphalt }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 50, 50), lam({ map: asphalt })); // subdivided, or the snapped corners warp it
   ground.rotation.x = -Math.PI / 2;
   s.add(ground);
 
@@ -155,8 +155,8 @@ function buildExterior(psx) {
     g.fillText('BY ORDER OF THE COUNTY', w / 2, 36);
     speckle(g, w, h, 60, 'rgba(90,50,20,0.6)', 2);
   });
-  const condemnedSign = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.8), lam({ map: condemned }));
-  condemnedSign.position.set(-1.6, 1.7, -11.97);
+  const condemnedSign = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.8), lam({ map: condemned, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  condemnedSign.position.set(-1.6, 1.7, -11.94);
   s.add(condemnedSign);
 
   // street lamps, one dying

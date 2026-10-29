@@ -11,7 +11,8 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
   flashlight.castShadow = true;
   flashlight.shadow.mapSize.set(512, 512);
   flashlight.shadow.camera.near = 0.1;
-  flashlight.shadow.bias = -0.002;
+  flashlight.shadow.bias = -0.0005;
+  flashlight.shadow.normalBias = 0.05; // no striped self-shadowing on walls and floors seen at a glancing angle
   flashlight.position.set(0.25, -0.2, 0);
   camera.add(flashlight);
   const flashTarget = new THREE.Object3D();
