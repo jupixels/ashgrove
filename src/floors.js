@@ -85,14 +85,19 @@ const B1 = grid(34, 18)
   ]);
 
 // ---------------------------------------------------------------- 2F: pediatrics
-const F2 = grid(40, 15)
+const F2 = grid(40, 16)
   .room(1, 1, 3, 9)              // stairwell
   .room(4, 4, 34, 2)             // corridor
   .room(5, 1, 6, 2).room(13, 1, 6, 2).room(21, 1, 6, 2).room(29, 1, 8, 2)  // children's rooms, staff room
   .room(5, 7, 9, 6)              // playroom
   .room(16, 7, 6, 4)             // nurse station
   .room(24, 7, 13, 6)            // ward
+  .room(19, 11, 1, 3)            // short hall south out of the nurse station
+  .room(5, 14, 32, 1)            // back corridor behind the playroom and the ward
   .put([
+    [10, 13, 'D'], [30, 13, 'D'], // back doors out of the playroom and the ward
+    [8, 14, 'H'], [24, 14, 'H'], [14, 14, 'R'], [27, 14, 'F'], [34, 14, 'R'], [19, 12, 'R'], [16, 14, 'g'],
+    [22, 14, '7'], [33, 14, '8'],
     [7, 3, 'D'], [15, 3, 'D'], [23, 3, 'D'], [31, 3, 'D'], [9, 6, 'D'], [27, 6, 'D'], [33, 6, 'D'],
     [18, 6, '.'], [19, 6, '.'],
     [2, 1, '^'], [2, 9, 'v'], [1, 6, 'Q'],
@@ -106,7 +111,7 @@ const F2 = grid(40, 15)
   ]);
 
 // ---------------------------------------------------------------- 3F: surgery and ICU
-const F3 = grid(40, 15)
+const F3 = grid(40, 16)
   .room(1, 1, 3, 9)              // stairwell
   .room(4, 4, 34, 2)             // corridor
   .room(5, 1, 7, 2)              // operating room 1
@@ -115,7 +120,12 @@ const F3 = grid(40, 15)
   .room(5, 7, 15, 6)             // ICU
   .room(22, 7, 6, 5)             // storage
   .room(30, 7, 7, 5)             // records
+  .room(5, 14, 32, 1)            // back corridor behind the ICU, storage and records
+  .room(24, 12, 1, 2).room(33, 12, 1, 2)
   .put([
+    [16, 13, 'D'], [24, 12, 'D'], [33, 12, 'D'], // back doors
+    [11, 14, 'H'], [28, 14, 'H'], [8, 14, 'R'], [19, 14, 'F'], [31, 14, 'R'], [22, 14, 'g'],
+    [14, 14, '7'], [30, 14, '8'],
     [8, 3, 'D'], [17, 3, 'D'], [26, 3, 'D'], [8, 6, 'D'], [16, 6, 'D'], [24, 6, 'D'], [33, 6, 'D'],
     [2, 1, '^'], [2, 9, 'v'], [1, 6, 'Q'],
     [21, 5, 'H'], [36, 4, 'H'], [19, 12, 'H'], [27, 11, 'H'],
@@ -130,14 +140,19 @@ const F3 = grid(40, 15)
   ]);
 
 // ---------------------------------------------------------------- 4F: Ward C
-const F4 = grid(36, 14)
+const F4 = grid(36, 16)
   .room(1, 1, 3, 8)              // stairwell
   .room(4, 4, 28, 2)             // corridor
   .room(5, 1, 8, 2).room(15, 1, 8, 2)   // wards
   .room(5, 7, 6, 6).room(24, 7, 7, 6)   // wards (column 4 stays wall: the stairwell is on the other side)
   .room(13, 7, 9, 6)             // operating theatre
   .room(32, 1, 3, 9)             // roof stairwell
+  .room(5, 14, 29, 1)            // back corridor behind the wards and the theatre...
+  .room(33, 10, 1, 4)            // ...and up into the roof stairwell
   .put([
+    [8, 13, 'D'], [17, 13, 'D'], [27, 13, 'D'], // back doors
+    [11, 14, 'H'], [23, 14, 'H'], [7, 14, 'R'], [15, 14, 'R'], [26, 14, 'R'], [33, 12, 'R'], [29, 14, 'g'],
+    [20, 14, '7'], [33, 11, '8'],
     [8, 3, 'D'], [18, 3, 'D'], [7, 6, 'D'], [27, 6, 'D'], [17, 6, 'D'],
     [2, 8, 'v'], [33, 1, '^'], [1, 4, 'Q'],
     [12, 5, 'H'], [23, 4, 'H'], [30, 12, 'H'], [10, 8, 'H'],
