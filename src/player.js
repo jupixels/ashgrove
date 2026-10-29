@@ -20,6 +20,55 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
   flashlight.target = flashTarget;
   const flashAim = new THREE.Vector3();
 
+  // The beam: a faint cone of light through the dusty air, and dust drifting through it.
+  const BEAM = 7.5;
+  const beamGeo = new THREE.ConeGeometry(BEAM * Math.tan(0.4), BEAM, 18, 1, true);
+  beamGeo.translate(0, -BEAM / 2, 0);
+  beamGeo.rotateX(-Math.PI / 2); // apex at the torch, opening along +z (lookAt points +z at the target)
+  const beamMat = new THREE.ShaderMaterial({
+    uniforms: { strength: { value: 0 }, time: { value: 0 } },
+    vertexShader: `varying float vAlong; varying vec3 vN, vV;
+      void main(){ vAlong = position.z / ${BEAM.toFixed(1)}; vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform float strength, time; varying float vAlong; varying vec3 vN, vV;
+      void main(){
+        float edge = pow(abs(dot(vN, vV)), 1.6);                 // soft sides, denser through the middle
+        float fall = pow(1.0 - clamp(vAlong, 0.0, 1.0), 2.2) * smoothstep(0.0, 0.08, vAlong);
+        float swirl = 0.8 + 0.2 * sin(vAlong * 23.0 - time * 0.7 + gl_FragCoord.x * 0.05);
+        gl_FragColor = vec4(vec3(1.0, 0.95, 0.84) * edge * fall * swirl * strength * 0.11, 1.0);
+      }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+  });
+  const beam = new THREE.Mesh(beamGeo, beamMat);
+  beam.position.copy(flashlight.position);
+  beam.frustumCulled = false;
+  beam.renderOrder = 10;
+  camera.add(beam);
+
+  const DUST = 700, BOX = 9;
+  const dustPos = new Float32Array(DUST * 3).map(() => Math.random() * BOX);
+  const dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = new THREE.ShaderMaterial({
+    uniforms: { strength: { value: 0 }, time: { value: 0 }, eye: { value: new THREE.Vector3() }, aim: { value: new THREE.Vector3(0, 0, -1) } },
+    vertexShader: `uniform float strength, time; uniform vec3 eye, aim; varying float vA;
+      void main(){
+        vec3 p = position + vec3(sin(time * 0.3 + position.y * 3.0), sin(time * 0.2 + position.x * 2.0) - time * 0.04, cos(time * 0.25 + position.z * 3.0)) * 0.25;
+        p = mod(p - eye + ${(BOX / 2).toFixed(1)}, ${BOX.toFixed(1)}) + eye - ${(BOX / 2).toFixed(1)}; // an endless field of dust around you
+        vec3 to = p - eye; float d = length(to);
+        float inBeam = smoothstep(0.88, 0.97, dot(to / d, aim));
+        vA = inBeam * (1.0 - smoothstep(1.0, ${BEAM.toFixed(1)}, d)) * smoothstep(0.3, 0.8, d) * strength;
+        vec4 mv = viewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv; gl_PointSize = 1.5;
+      }`,
+    fragmentShader: `varying float vA; void main(){ if (vA < 0.02) discard; gl_FragColor = vec4(vec3(1.0, 0.95, 0.85) * vA * 0.9, 1.0); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  });
+  const dust = new THREE.Points(dustGeo, dustMat);
+  dust.frustumCulled = false;
+  dust.renderOrder = 11;
+  scene.add(dust);
+
   const p = {
     floor: null,
     battery: 1, flashOn: true,
@@ -257,6 +306,14 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     camera.getWorldDirection(tmp);
     flashAim.lerp(camera.position.clone().add(tmp.multiplyScalar(5)), Math.min(1, dt * 9));
     flashTarget.position.copy(flashAim);
+    // beam and dust follow the light (and fade with the battery)
+    const strength = flashlight.intensity / 30;
+    beam.visible = strength > 0.01;
+    beam.lookAt(flashAim);
+    beamMat.uniforms.strength.value = dustMat.uniforms.strength.value = strength;
+    beamMat.uniforms.time.value = dustMat.uniforms.time.value += dt;
+    dustMat.uniforms.eye.value.copy(camera.position);
+    dustMat.uniforms.aim.value.copy(flashAim).sub(camera.position).normalize();
     ui.battery(p.battery, p.battery < 0.35 || !p.flashOn);
   }
 

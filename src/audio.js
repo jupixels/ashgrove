@@ -133,9 +133,56 @@ export class GameAudio {
     return buf;
   }
 
-  // Play a sound by name. Returns { stop() } for loops.
-  play(name, { volume = 1, rate = 1, loop = false } = {}) {
+  // ---------------------------------------------------------------- 3D sound
+  // Sounds given a position are placed around you (left, right, behind) with an HRTF panner, and come through
+  // muffled when there's a wall or a closed door in between. Volume over distance stays with the caller.
+  // `occluded(pos)` is set by the game: true when something solid is between you and pos.
+  spatial(pos) {
+    const p = this.ctx.createPanner();
+    p.panningModel = 'HRTF';
+    p.distanceModel = 'linear';
+    p.rolloffFactor = 0; // no extra distance falloff: callers already scale volume by distance
+    p.positionX.value = pos.x; p.positionY.value = pos.y || 1.2; p.positionZ.value = pos.z;
+    const muffle = this.ctx.createBiquadFilter();
+    muffle.type = 'lowpass';
+    const node = { input: p, muffle, pos: pos.clone ? pos.clone() : { ...pos }, wall: 1 };
+    const out = this.ctx.createGain();
+    p.connect(muffle).connect(out).connect(this.master);
+    node.out = out;
+    this.occlude(node, true);
+    return node;
+  }
+  occlude(node, now) {
+    const blocked = this.occluded ? this.occluded(node.pos) : false;
+    const freq = blocked ? 650 : 20000, gain = blocked ? 0.55 : 1;
+    const t = this.ctx.currentTime;
+    if (now) { node.muffle.frequency.value = freq; node.out.gain.value = gain; return; }
+    node.muffle.frequency.setTargetAtTime(freq, t, 0.15);
+    node.out.gain.setTargetAtTime(gain, t, 0.15);
+  }
+  // where your ears are: call every frame with the camera
+  listen(camera) {
+    if (!this.ctx) return;
+    const l = this.ctx.listener, p = camera.position;
+    camera.getWorldDirection(this._fwd || (this._fwd = p.clone()));
+    if (l.positionX) {
+      l.positionX.value = p.x; l.positionY.value = p.y; l.positionZ.value = p.z;
+      l.forwardX.value = this._fwd.x; l.forwardY.value = this._fwd.y; l.forwardZ.value = this._fwd.z;
+      l.upX.value = 0; l.upY.value = 1; l.upZ.value = 0;
+    } else {
+      l.setPosition(p.x, p.y, p.z);
+      l.setOrientation(this._fwd.x, this._fwd.y, this._fwd.z, 0, 1, 0);
+    }
+    // positional loops: keep checking whether a wall has come between you
+    this._loops = (this._loops || []).filter((n) => !n.dead);
+    if ((this._occT = (this._occT || 0) + 1) % 6 === 0) this._loops.forEach((n) => this.occlude(n));
+  }
+
+  // Play a sound by name, optionally at a world position ({ pos }). Returns { stop(), gain } for buffers.
+  play(name, { volume = 1, rate = 1, loop = false, pos = null } = {}) {
     const buf = this.buffers[name];
+    const space = pos ? this.spatial(pos) : null;
+    const dest = space ? space.input : this.master;
     if (buf) {
       const src = this.ctx.createBufferSource();
       src.buffer = buf;
@@ -143,19 +190,23 @@ export class GameAudio {
       src.playbackRate.value = rate;
       const g = this.ctx.createGain();
       g.gain.value = volume;
-      src.connect(g).connect(this.master);
+      src.connect(g).connect(dest);
       src.start();
       return { stop: () => src.stop(), gain: g };
     }
     const synth = this.synth[name];
-    return synth ? synth.call(this, volume) : null;
+    if (!synth) return null;
+    const master = this.master;
+    this.master = dest; // placeholder sounds connect to this.master: route them through the panner too
+    try { return synth.call(this, volume); } finally { this.master = master; }
   }
 
   // A looping sound with a fade-out stop. Falls back to filtered noise (rain/hiss) if the file is missing.
-  loop(name, volume = 1) {
+  loop(name, volume = 1, pos = null) {
     const g = this.ctx.createGain();
     g.gain.value = volume;
-    g.connect(this.master);
+    const space = pos ? this.spatial(pos) : null;
+    if (space) { (this._loops || (this._loops = [])).push(space); g.connect(space.input); } else g.connect(this.master);
     let src;
     if (this.buffers[name]) {
       src = this.ctx.createBufferSource();
@@ -183,6 +234,13 @@ export class GameAudio {
         g.gain.setValueAtTime(g.gain.value, t);
         g.gain.linearRampToValueAtTime(0, t + fade);
         src.stop(t + fade + 0.05);
+        if (space) space.dead = true;
+      },
+      // move a positional loop (it follows whatever it's attached to)
+      setPos: (p) => {
+        if (!space) return;
+        space.pos.x = p.x; space.pos.z = p.z;
+        space.input.positionX.value = p.x; space.input.positionZ.value = p.z;
       },
     };
   }

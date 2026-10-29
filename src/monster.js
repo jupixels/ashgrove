@@ -121,7 +121,7 @@ export function createMonster({ A, scene, audio }) {
     m.state = 'investigate';
     m.target = pos.clone();
     m.path = [];
-    if (m.growlT <= 0) { audio.play('monster_clicking', { volume: 0.5 }); m.growlT = 4; }
+    if (m.growlT <= 0) { audio.play('monster_clicking', { volume: 0.5, pos: group.position }); m.growlT = 4; }
   };
 
   function goTo(goal, speed, dt) {
@@ -170,7 +170,7 @@ export function createMonster({ A, scene, audio }) {
       m.stunT = 1.6;
       m.stunCooldown = 8;
       anim('roar', { fade: 0.1, speed: 1.4 });
-      audio.play('monster_scream', { volume: 0.6 });
+      audio.play('monster_scream', { volume: 0.6, pos: group.position });
       if (events.stunned) events.stunned();
     }
 
@@ -183,7 +183,7 @@ export function createMonster({ A, scene, audio }) {
     if (sees) {
       if (m.state !== 'chase') {
         anim('roar', { fade: 0.1, speed: 1.6, once: true });
-        audio.play('monster_growl_distant', { volume: 1 });
+        audio.play('monster_growl_distant', { volume: 1, pos: group.position });
         if (events.spotted) events.spotted();
       }
       m.state = 'chase';
@@ -225,7 +225,7 @@ export function createMonster({ A, scene, audio }) {
       if (m.stepT <= 0) {
         m.stepT = 1.4;
         const v = THREE.MathUtils.clamp(1 - dist / 22, 0, 1);
-        if (v > 0.03) audio.play(Math.random() < 0.25 ? 'monster_drag_tubes' : 'monster_footstep_heavy', { volume: v });
+        if (v > 0.03) audio.play(Math.random() < 0.25 ? 'monster_drag_tubes' : 'monster_footstep_heavy', { volume: v, pos: group.position });
       }
     }
 

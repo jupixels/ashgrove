@@ -65,7 +65,7 @@ export function createStory(ctx) {
   }
   function loop(name, pos, range, base = 0.8) {
     if (loops[name]) return;
-    const l = audio.loop(name, 0);
+    const l = audio.loop(name, 0, range < 1e8 ? pos : null); // placed in the world (chase music isn't)
     loops[name] = { loop: l, pos, range, base };
   }
   function stopLoop(name) { if (loops[name]) { loops[name].loop.stop(1); delete loops[name]; } }
@@ -520,10 +520,9 @@ export function createStory(ctx) {
 
   // ---------------------------------------------------------------- 1F sightings (chapter 1): it just stands there
   const SIGHTINGS = [
-    { area: [8, 12, 5, 6], at: [15, 4], behind: false },   // further down the hall, in a doorway
-    { area: [6, 12, 1, 3], at: [8, 5], behind: true },     // patient room: watching from the hall when you turn round
-    { area: [22, 24, 8, 10], at: [23, 7], behind: true },  // the staff room doorway
-    { area: [29, 37, 8, 12], at: [31, 7], behind: true },  // the cafeteria doorway
+    { id: 1, area: [6, 12, 1, 3], at: [8, 5], behind: true },     // patient room: watching from the hall when you turn round
+    { id: 2, area: [22, 24, 8, 10], at: [23, 7], behind: true },  // the staff room doorway
+    { id: 3, area: [29, 37, 8, 12], at: [31, 7], behind: true },  // the cafeteria doorway
   ];
   const sight = { current: null, timer: 0, lit: 0, cooldown: 0 };
   function updateSightings(dt) {
@@ -553,7 +552,8 @@ export function createStory(ctx) {
       return;
     }
     if (monster.group.visible || sight.cooldown > 0) return;
-    for (const [i, s] of SIGHTINGS.entries()) {
+    for (const s of SIGHTINGS) {
+      const i = s.id;
       if (F()[`sight${i}`] || !inCells(...s.area)) continue;
       const pos = cellPos(...s.at);
       if (s.behind && player.facingFlat(pos) > -0.2) continue;

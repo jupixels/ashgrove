@@ -46,10 +46,12 @@ export function createEngine() {
       red: { value: 0 },
       fade: { value: 0 },
       phone: { value: 0 },
+      tired: { value: 0 },   // out of breath from running
+      air: { value: 0 },     // holding your breath: 1 = about to gasp
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
-      uniform sampler2D tDiffuse; uniform vec2 res; uniform float time, aberration, grain, red, fade, phone;
+      uniform sampler2D tDiffuse; uniform vec2 res; uniform float time, aberration, grain, red, fade, phone, tired, air;
       varying vec2 vUv;
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       float bayer(vec2 p){ p = mod(floor(p), 4.0);
@@ -64,6 +66,9 @@ export function createEngine() {
         uv.x += jitter;
         float ab = 0.0015 + aberration * 0.015;
         vec3 col = vec3(texture2D(tDiffuse, uv + vec2(ab, 0.)).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - vec2(ab, 0.)).b);
+        // winded: vision swims (a doubled image drifting with each gasp)
+        float gasp = 0.5 + 0.5 * sin(time * 7.0);
+        col = mix(col, texture2D(tDiffuse, uv + vec2(0.006, 0.002) * tired * gasp).rgb, 0.4 * tired);
         col = pow(max(col, 0.0), vec3(1.0 / 2.2));
         // phone camera: greener night-vision tint and heavier noise
         col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))) * vec3(0.75, 1.15, 0.8) * 1.4, phone);
@@ -72,6 +77,13 @@ export function createEngine() {
         col += (hash(px + fract(time) * 100.0) - 0.5) * (grain + phone * 0.1);
         col *= 0.93 + 0.07 * sin(uv.y * res.y * 3.14159);
         col *= smoothstep(0.82, 0.18, length(c));
+        // winded: the edges close in, pulsing with your breathing
+        col *= mix(1.0, 1.0 - smoothstep(0.12, 0.7 - 0.08 * gasp, length(c)), tired * 0.75);
+        // holding your breath: the world drains of colour and goes dark and red from the edges as the air runs out
+        float beat = 0.5 + 0.5 * sin(time * (6.0 + air * 6.0));
+        float squeeze = 1.0 - smoothstep(0.15 - air * 0.1, 0.85 - air * 0.4 - beat * air * 0.06, length(c));
+        col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))), air * 0.7);
+        col = col * mix(1.0, squeeze, air) + vec3(0.22, 0.0, 0.0) * (1.0 - squeeze) * smoothstep(0.5, 1.0, air);
         col = mix(col, vec3(0.55, 0.0, 0.0), red);
         col *= 1.0 - fade;
         gl_FragColor = vec4(col, 1.0);

@@ -87,7 +87,7 @@ function loadFloor(key, arrive) {
   if (game.floor) { scene.remove(game.floor.group); game.floor.dispose(); }
   const def = FLOORS[key];
   const floor = buildFloor(key, def, A, { taken: game.taken, lessGore: settings.lessGore, powered: !!game.save.flags.power });
-  floor.onSound = (name, pos, vol) => audio.play(name, { volume: vol * THREE.MathUtils.clamp(1 - camera.position.distanceTo(pos) / 25, 0.1, 1) });
+  floor.onSound = (name, pos, vol) => audio.play(name, { pos, volume: vol * THREE.MathUtils.clamp(1 - camera.position.distanceTo(pos) / 25, 0.1, 1) });
   scene.add(floor.group);
   if (def.outdoor) { scene.fog = new THREE.FogExp2(0x4a3a4a, 0.02); ambient.intensity = 1.6; } else indoors();
   game.floor = floor;
@@ -198,6 +198,8 @@ function toMenu() {
 async function ensureAudio() {
   if (!audio.ctx) {
     await audio.init();
+    // muffle sounds that have a wall or closed door between you and them
+    audio.occluded = (pos) => !!game.floor && !game.floor.def.outdoor && !game.floor.los(camera.position, new THREE.Vector3(pos.x, camera.position.y, pos.z));
     applySettings();
     audio.startAmbience();
   }
@@ -334,6 +336,51 @@ function simulate(dt) {
   game.floor.update(dt);
   updateDread(dt);
   autosave(dt);
+  game.save.playTime = (game.save.playTime || 0) + dt;
+  ui.camTime(game.save.playTime);
+}
+
+// ---------------------------------------------------------------- light and air
+// One ceiling light at a time casts real shadows: the one nearest the monster, so its shape stretches across the
+// walls and floor as it walks under it (or, when it's not around, the one nearest you). The shadow light always
+// exists and just takes that light's place, so the light count never changes and nothing recompiles.
+const shadowLight = new THREE.PointLight(0xffffff, 0, 11, 1.6);
+shadowLight.castShadow = true;
+shadowLight.shadow.mapSize.set(256, 256);
+shadowLight.shadow.camera.near = 0.2;
+shadowLight.shadow.camera.far = 12;
+shadowLight.shadow.bias = -0.002;
+shadowLight.shadow.normalBias = 0.05;
+scene.add(shadowLight);
+function castShadows() {
+  shadowLight.intensity = 0;
+  const f = game.floor;
+  if (!f || f.def.outdoor) return;
+  const near = monster.group.visible ? monster.group.position : camera.position;
+  let best = null, bestD = monster.group.visible ? 7 : 9;
+  for (const l of f.lights) {
+    if (l.light.intensity <= 0) continue;
+    const d = Math.hypot(l.light.position.x - near.x, l.light.position.z - near.z);
+    if (d < bestD) { bestD = d; best = l.light; }
+  }
+  if (!best) return;
+  shadowLight.position.copy(best.position);
+  shadowLight.color.copy(best.color);
+  shadowLight.distance = best.distance;
+  shadowLight.decay = best.decay;
+  shadowLight.intensity = best.intensity;
+  best.intensity = 0;
+}
+// the air is thick with dust: the fog closes in where the lights are dead and thins out under working ones
+let fogDensity = 0.11;
+function updateFog(dt) {
+  const f = game.floor;
+  if (!f || f.def.outdoor || !scene.fog) return;
+  let lit = 0;
+  for (const l of f.lights) lit += (l.light.intensity / 7) * Math.max(0, 1 - camera.position.distanceTo(l.light.position) / 9);
+  const want = THREE.MathUtils.lerp(0.16, 0.08, Math.min(1, lit));
+  fogDensity += (want - fogDensity) * Math.min(1, dt * 0.8);
+  scene.fog.density = fogDensity;
 }
 
 function render(dt, t) {
@@ -346,7 +393,13 @@ function render(dt, t) {
   const ox = (Math.random() - 0.5) * shake * 0.12, oy = (Math.random() - 0.5) * shake * 0.12;
   cam.position.x += ox;
   cam.position.y += oy;
-  engine.render(view.scene, cam, { time: t, aberration: fx.aberration, red: fx.red, fade: fx.fade, phone: player.phoneUp ? 1 : 0 });
+  // stamina and breath show on the screen itself, not as bars
+  const playing = game.state === 'playing';
+  const tiredWant = playing && !player.hidden ? (player.winded ? 1 : THREE.MathUtils.clamp((0.45 - player.stamina) / 0.45, 0, 1) * 0.7) : 0;
+  const airWant = playing && player.hidden ? (player.breathHeld ? 1 - player.breath : (1 - player.breath) * 0.4) : 0;
+  fx.tired = (fx.tired || 0) + (tiredWant - (fx.tired || 0)) * Math.min(1, dt * 3);
+  fx.air = (fx.air || 0) + (airWant - (fx.air || 0)) * Math.min(1, dt * 4);
+  engine.render(view.scene, cam, { time: t, aberration: fx.aberration, red: fx.red, fade: fx.fade, phone: player.phoneUp ? 1 : 0, tired: fx.tired, air: fx.air });
   cam.position.x -= ox;
   cam.position.y -= oy;
 }
@@ -359,7 +412,10 @@ function frame() {
     if (!intro.frozen) intro.update(dt);
     monster.update(dt, null, monsterEvents);
   } else if (game.state === 'playing' && game.floor && (controls.isLocked || DEBUG) && !game.overlay) simulate(dt * fx.timeScale);
-  if (game.floor) game.floor.updateLights(dt, (pos) => { if (camera.position.distanceTo(pos) < 10) audio.play('flicker', { volume: 0.4 }); });
+  if (game.floor) game.floor.updateLights(dt, (pos) => { if (camera.position.distanceTo(pos) < 10) audio.play('flicker', { volume: 0.4, pos }); });
+  updateFog(dt);
+  castShadows();
+  audio.listen(view.camera);
   render(dt, t);
 }
 

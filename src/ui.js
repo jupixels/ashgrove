@@ -15,7 +15,11 @@ export function createUI() {
     kc: { red: $('kcRed'), blue: $('kcBlue'), black: $('kcBlack') }, keycards: $('keycards'),
     chapter: $('chapter'), chapterTitle: $('chapterTitle'), chapterSub: $('chapterSub'),
     locker: $('locker'), phone: $('phone'),
+    cam: $('cam'), camTc: $('camTc'), camStamp: $('camStamp'), camBat: $('camBat'),
   };
+  let camOn = false, phoneOn = false, lastTc = -1;
+  const camShow = () => el.cam.classList.toggle('on', camOn && !phoneOn);
+  const pad = (n) => String(Math.floor(n)).padStart(2, '0');
   const show = (e, on) => e.classList.toggle('on', on);
   let msgTimer = 0, lastPrompt = null;
 
@@ -25,6 +29,8 @@ export function createUI() {
     hud(on) {
       for (const e of [el.cross, el.keycards]) e.style.display = on ? '' : 'none';
       el.cross.style.display = on ? 'block' : 'none';
+      camOn = on;
+      camShow();
       if (!on) { ui.prompt(''); el.stamina.style.opacity = 0; el.battery.style.opacity = 0; el.breath.style.opacity = 0; }
     },
     prompt(text) { if (text !== lastPrompt) { el.prompt.textContent = text || ''; lastPrompt = text; } },
@@ -42,7 +48,21 @@ export function createUI() {
       msgTimer = setTimeout(() => (el.message.style.opacity = 0), ms);
     },
     message(text, ms = 3000) { ui.say('', text, ms); },
-    battery(v, visible) { el.battery.style.opacity = visible ? 1 : 0; el.batteryFill.style.width = v * 100 + '%'; },
+    battery(v, visible) {
+      el.battery.style.opacity = visible ? 1 : 0;
+      el.batteryFill.style.width = v * 100 + '%';
+      [...el.camBat.children].forEach((bar, i) => bar.classList.toggle('off', v <= i * 0.25 + 0.02));
+      el.camBat.classList.toggle('low', v < 0.25);
+    },
+    // the camcorder's running time, and the clock in the corner (it was 2:14 AM when you went in)
+    camTime(seconds) {
+      const s = Math.floor(seconds);
+      if (s === lastTc) return;
+      lastTc = s;
+      el.camTc.textContent = `${pad(s / 3600)}:${pad((s / 60) % 60)}:${pad(s % 60)}`;
+      const m = 14 + Math.floor(s / 60), h = 2 + Math.floor(m / 60);
+      el.camStamp.innerHTML = `OCT.31.1997<br>${((h - 1) % 12) + 1}:${pad(m % 60)} AM`;
+    },
     stamina(v, winded) {
       el.stamina.style.opacity = v < 0.999 ? 1 : 0;
       el.staminaFill.style.width = v * 100 + '%';
@@ -56,7 +76,7 @@ export function createUI() {
     hold(p) { el.hold.style.opacity = p > 0 ? 1 : 0; el.holdFill.style.width = Math.min(1, p) * 100 + '%'; },
     keycards(flags) { for (const k in el.kc) el.kc[k].classList.toggle('got', !!flags[k]); },
     locker(on) { el.locker.style.display = on ? 'block' : 'none'; },
-    phone(on) { el.phone.style.display = on ? 'block' : 'none'; },
+    phone(on) { el.phone.style.display = on ? 'block' : 'none'; phoneOn = on; camShow(); },
     chapter(title, sub) {
       el.chapterTitle.textContent = title;
       el.chapterSub.textContent = sub || '';

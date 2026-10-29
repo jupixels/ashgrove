@@ -255,7 +255,7 @@ export function buildFloor(key, def, A, opts = {}) {
     const iid = id(x, z);
     const c = cellCenter(x, z);
     const n = kind === 'note' ? noteN++ : kind === 'tape' ? tapeN++ : 0;
-    if (taken.has(iid)) return;
+    if (taken.has(iid) && kind !== 'note') return; // (older saves counted notes as taken)
     let mesh;
     if (kind === 'battery') {
       mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.16, 6), new THREE.MeshBasicMaterial({ color: 0xb8a24a }));
@@ -293,9 +293,11 @@ export function buildFloor(key, def, A, opts = {}) {
     const it = interact({
       id: iid, pos: mesh.position, radius: 0.35, label: () => label,
       use: () => {
-        group.remove(mesh);
-        it.enabled = false;
-        taken.add(iid);
+        if (kind !== 'note') { // notes are read where they lie and stay there
+          group.remove(mesh);
+          it.enabled = false;
+          taken.add(iid);
+        }
         if (floor.onPickup) floor.onPickup(kind, data, iid);
       },
     });
@@ -655,6 +657,118 @@ export function buildFloor(key, def, A, opts = {}) {
       add(tnk);
       for (const [dx, dz] of [[-0.8, -0.8], [0.8, -0.8], [-0.8, 0.8], [0.8, 0.8]]) box(0.12, 1.4, 0.12, mat.metal, c.x + dx, 0.7, c.z + dz);
       addSolid(c.x, c.z, 1.0, 1.0, 'prop');
+    }
+  }
+
+  // ---------------------------------------------------------------- dressing: trim, rails, frames, signs, posters, mess
+  if (!floor.outdoor) dress();
+  function dress() {
+    const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // north, south, west, east
+    const busyWall = new Set(), busyCell = new Set();
+    for (const o of def.objects || []) {
+      if (['writing', 'drawing', 'exit', 'elevator'].includes(o.type)) busyWall.add(`${o.x},${o.z}`);
+      else for (let dz = 0; dz < (o.rows || 1); dz++) busyCell.add(`${o.x},${o.z + dz}`);
+    }
+    const plain = (x, z) => '.LFRX12345678'.includes(at(x, z)) && !busyCell.has(`${x},${z}`);
+    const nearDoor = (x, z) => DIRS.some(([dx, dz]) => at(x + dx, z + dz) === 'D') || at(x, z) === 'D';
+    // how far the room reaches away from a wall: 2 cells or less is a corridor
+    const reach = (x, z, dx, dz) => { let n = 0; while (walkable(x - dx * n, z - dz * n) && n < 4) n++; return n; };
+
+    const strips = [], rails = [];
+    for (let z = 0; z < ROWS; z++) for (let x = 0; x < COLS; x++) {
+      if (!walkable(x, z) || at(x, z) === 'D') continue;
+      const c = cellCenter(x, z);
+      for (const [dx, dz] of DIRS) {
+        if (walkable(x + dx, z + dz)) continue;
+        // the wall face between this cell and the wall cell next to it
+        const face = c.clone().add(new THREE.Vector3(dx * CELL / 2, 0, dz * CELL / 2));
+        const rotY = dx ? Math.PI / 2 : 0;
+        const inward = new THREE.Vector3(-dx, 0, -dz);
+        strips.push({ pos: face.clone().addScaledVector(inward, 0.015).setY(0.07), rotY });
+        if (reach(x, z, dx, dz) <= 2 && plain(x, z) && !busyWall.has(`${x + dx},${z + dz}`)) rails.push({ pos: face.clone().addScaledVector(inward, 0.07).setY(0.92), rotY, face, inward });
+      }
+    }
+    const instanced = (geo, material, list) => {
+      const im = new THREE.InstancedMesh(geo, material, list.length);
+      const q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), up = new THREE.Vector3(0, 1, 0);
+      list.forEach((s, i) => im.setMatrixAt(i, new THREE.Matrix4().compose(s.pos, q.setFromAxisAngle(up, s.rotY), one)));
+      im.receiveShadow = true;
+      return add(im);
+    };
+    // skirting boards along the bottom of every wall (a little short of each corner so they never overlap)
+    if (strips.length) instanced(new THREE.BoxGeometry(CELL - 0.06, 0.14, 0.03), mat.dark2 || (mat.dark2 = psx(new THREE.MeshLambertMaterial({ color: 0x3a3a34 }))), strips);
+    // handrails down the corridors, on little brackets
+    if (rails.length) {
+      instanced(new THREE.BoxGeometry(CELL - 0.16, 0.05, 0.05), mat.metal, rails);
+      const brackets = rails.flatMap((r) => [-0.6, 0.6].map((o) => ({
+        pos: r.face.clone().addScaledVector(r.inward, 0.035).add(new THREE.Vector3(r.rotY ? 0 : o, 0.89, r.rotY ? o : 0)), rotY: r.rotY,
+      })));
+      instanced(new THREE.BoxGeometry(0.03, 0.06, 0.07), mat.metal, brackets);
+    }
+
+    // door frames: steel jambs on both faces of the wall, a proper wall piece above the door, and a room sign
+    for (const d of floor.doors) {
+      const c = cellCenter(d.x, d.z);
+      for (const side of [-1, 1]) {
+        const at = (along, y, out) => d.alongX
+          ? new THREE.Vector3(c.x + along, y, c.z + side * (CELL / 2 + out))
+          : new THREE.Vector3(c.x + side * (CELL / 2 + out), y, c.z + along);
+        const rot = d.alongX ? 0 : Math.PI / 2;
+        for (const s of [-1, 1]) { const p = at(s * (CELL / 2 + 0.06), 1.2, 0.03); box(0.12, 2.4, 0.08, mat.metal, p.x, p.y, p.z, rot); }
+        const top = at(0, (2.35 + WALL_H) / 2, 0.03);
+        box(CELL + 0.24, WALL_H - 2.35, 0.08, mat.wall, top.x, top.y, top.z, rot);
+        const trim = at(0, 2.38, 0.035);
+        box(CELL + 0.24, 0.06, 0.09, mat.metal, trim.x, trim.y, trim.z, rot);
+        const text = d.code ? null : (def.signs || {})[`${d.x},${d.z}`];
+        if (text) {
+          const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.22), new THREE.MeshBasicMaterial({ map: T.signTex(text, '#1e1e1c', '#b8b4a0'), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+          sign.position.copy(at(0, 2.68, 0.075));
+          sign.rotation.y = d.alongX ? (side > 0 ? 0 : Math.PI) : (side > 0 ? Math.PI / 2 : -Math.PI / 2);
+          add(sign);
+        }
+      }
+    }
+
+    // faded posters on plain stretches of corridor wall
+    let posterN = 0;
+    for (const r of rails) {
+      if (Math.random() > 0.13) continue;
+      const [cx, cz] = cellOf(r.face.clone().addScaledVector(r.inward, 0.5));
+      const wall = cellOf(r.face.clone().addScaledVector(r.inward, -0.5));
+      if (busyWall.has(`${wall[0]},${wall[1]}`) || nearDoor(cx, cz)) continue;
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.64), psx(new THREE.MeshLambertMaterial({ map: T.posterTex(posterN++ + Math.floor(Math.random() * 6)), transparent: true, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })));
+      p.position.copy(r.face).addScaledVector(r.inward, 0.03).setY(1.55);
+      p.rotation.y = Math.atan2(r.inward.x, r.inward.z);
+      p.rotation.z = (Math.random() - 0.5) * 0.08;
+      add(p);
+    }
+
+    // mess on the floors: papers, puddles, knocked-over chairs
+    const chairMat = psx(new THREE.MeshLambertMaterial({ color: 0x4a5a6a }));
+    for (let z = 0; z < ROWS; z++) for (let x = 0; x < COLS; x++) {
+      if (!plain(x, z) || at(x, z) === 'X') continue;
+      const c = cellCenter(x, z);
+      if (Math.random() < 0.14) {
+        for (let i = 0, n = 1 + Math.floor(Math.random() * 3); i < n; i++) {
+          decal(T.paperTex(x + z + i), 0.24, 0.32, c.clone().add(new THREE.Vector3(jitter(1.3), 0.016 + i * 0.002, jitter(1.3))), -Math.PI / 2, Math.random() * 6);
+        }
+      }
+      if (Math.random() < 0.035) decal(T.puddleTex(x * 3 + z), 1.3, 1.3, c.clone().setY(0.018), -Math.PI / 2, Math.random() * 6);
+      if (Math.random() < 0.03 && DIRS.every(([dx, dz]) => walkable(x + dx, z + dz)) && !nearDoor(x, z)) chair(c, Math.random() < 0.6);
+    }
+    function chair(c, tipped) {
+      const g = new THREE.Group();
+      const part = (w, h, d, px, py, pz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), chairMat); m.position.set(px, py, pz); m.castShadow = m.receiveShadow = true; g.add(m); };
+      part(0.42, 0.04, 0.42, 0, 0.45, 0);
+      part(0.42, 0.42, 0.04, 0, 0.68, -0.2);
+      for (const [lx, lz] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) part(0.03, 0.45, 0.03, lx, 0.225, lz);
+      const pivot = new THREE.Group();
+      pivot.add(g);
+      if (tipped) { g.rotation.z = Math.PI / 2; g.position.set(0.44, 0.21, 0); } // on its side
+      pivot.position.set(c.x + jitter(0.8), 0, c.z + jitter(0.8));
+      pivot.rotation.y = Math.random() * 6;
+      add(pivot);
+      addSolid(pivot.position.x, pivot.position.z, 0.3, 0.3, 'prop');
     }
   }
 

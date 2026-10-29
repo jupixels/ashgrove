@@ -148,6 +148,7 @@ export const FLOORS = {
   F1: {
     name: 'Ground Floor',
     map: F1.rows(),
+    signs: { '40,5': 'STAIRS', '33,4': 'SECURITY', '31,7': 'CAFETERIA', '38,12': 'RESTROOM' },
     needsPower: true,
     ambience: 'rain_outside_muffled',   // the storm outside, through the walls
     arrive: {
@@ -177,6 +178,7 @@ export const FLOORS = {
   B1: {
     name: 'Basement',
     map: B1.rows(),
+    signs: { '8,4': 'MORGUE', '16,4': 'STORAGE', '24,4': 'BOILER ROOM' },
     needsPower: true,
     ambience: 'morgue_ambience',
     arrive: { fromAbove: cell(2, 2, yawSouth) },
@@ -197,6 +199,7 @@ export const FLOORS = {
   F2: {
     name: 'Pediatrics',
     map: F2.rows(),
+    signs: { '7,3': 'ROOM 201', '15,3': 'ROOM 202', '23,3': 'ROOM 203', '31,3': 'STAFF ONLY', '9,6': 'PLAYROOM', '27,6': 'WARD B', '33,6': 'WARD B' },
     ambience: 'pediatrics_ambience',
     keycard: 'blue',
     arrive: { fromBelow: cell(2, 8, yawNorth), fromAbove: cell(2, 2, yawSouth) },
@@ -217,6 +220,7 @@ export const FLOORS = {
   F3: {
     name: 'Surgery & ICU',
     map: F3.rows(),
+    signs: { '8,3': 'SURGERY 1', '17,3': 'SURGERY 2', '8,6': 'ICU', '16,6': 'ICU', '24,6': 'STORAGE', '33,6': 'RECORDS' },
     keycard: 'black',
     ambience: 'fluorescent_buzz',
     arrive: { fromBelow: cell(2, 8, yawNorth) },
@@ -237,6 +241,7 @@ export const FLOORS = {
   F4: {
     name: 'Ward C',
     map: F4.rows(),
+    signs: { '8,3': 'WARD C1', '18,3': 'WARD C2', '7,6': 'WARD C3', '27,6': 'WARD C4', '17,6': 'THEATRE' },
     ambience: 'hospital_drone',
     arrive: { fromBelow: cell(2, 5, yawEast) },
     objects: [

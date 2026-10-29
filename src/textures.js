@@ -158,3 +158,50 @@ export function signTex(text, bg = '#1c3a1e', fg = '#e8f0d8') {
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   return t;
 }
+
+// faded hospital posters for the corridor walls
+const POSTERS = [
+  ['WASH', 'YOUR HANDS', '#2a5a7a'], ['QUIET', 'PLEASE', '#6a2a2a'], ['VISITING', 'HOURS 2-8 PM', '#3a5a3a'],
+  ['FLU SHOTS', 'ASK A NURSE', '#7a6a2a'], ['NO', 'SMOKING', '#7a2a2a'], ['CHILDREN', 'MUST BE ACCOMPANIED', '#4a3a6a'],
+];
+export function posterTex(n) {
+  const [a, b, color] = POSTERS[n % POSTERS.length];
+  return makeTex(48, 64, 300 + n, (g, w, h, r) => {
+    g.fillStyle = '#c8c0a8';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = color;
+    g.fillRect(3, 3, w - 6, 26);
+    g.fillStyle = '#e8e0cc';
+    g.font = 'bold 9px sans-serif';
+    g.textAlign = 'center';
+    g.fillText(a, w / 2, 19);
+    g.fillStyle = '#2a2620';
+    g.font = 'bold 6px sans-serif';
+    g.fillText(b, w / 2, 40);
+    g.fillStyle = color;
+    g.beginPath(); g.arc(w / 2, 52, 6, 0, Math.PI * 2); g.fill(); // a little icon
+    for (let i = 0; i < 6; i++) blob(g, r() * w, r() * h, 4 + r() * 10, 'rgba(90,70,30,0.35)'); // water damage
+    if (r() < 0.5) { g.fillStyle = 'rgba(0,0,0,0)'; g.clearRect(w - 14 - r() * 10, 0, 30, 10 + r() * 12); } // a torn corner
+    noise(g, w, h, r, 30);
+  });
+}
+
+// a sheet of paper on the floor (charts, forms)
+export function paperTex(n) {
+  return makeTex(16, 22, 500 + n, (g, w, h, r) => {
+    g.fillStyle = '#d8d2c0';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(40,40,60,0.55)';
+    for (let y = 3; y < h - 2; y += 2) g.fillRect(2, y, 4 + r() * (w - 6), 1);
+    blob(g, r() * w, r() * h, 6, 'rgba(70,60,40,0.4)');
+  });
+}
+
+// a puddle: dark, with a faint sheen
+export function puddleTex(seed = 1) {
+  return makeTex(64, 64, 700 + seed, (g, w, h, r) => {
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 7; i++) blob(g, w / 2 + (r() - 0.5) * 26, h / 2 + (r() - 0.5) * 26, 10 + r() * 14, 'rgba(6,8,10,0.55)');
+    for (let i = 0; i < 4; i++) blob(g, w / 2 + (r() - 0.5) * 24, h / 2 + (r() - 0.5) * 24, 4 + r() * 6, 'rgba(120,130,140,0.18)');
+  });
+}
