@@ -119,6 +119,7 @@ const story = createStory(ctx);
 // ---------------------------------------------------------------- dying, endings, menus
 function died(text) {
   game.state = 'dead';
+  silenceHeart();
   monster.mode = 'off';
   monster.group.visible = false;
   const disk = SAVE.loadSave();
@@ -139,6 +140,7 @@ function retry() {
 
 function endGame(kind) {
   game.state = 'ending';
+  silenceHeart();
   player.frozen = true;
   monster.mode = 'off';
   monster.group.visible = false;
@@ -162,6 +164,7 @@ function startPlaying() {
 
 function toMenu() {
   game.state = 'menu';
+  silenceHeart();
   story.reset();
   monster.mode = 'off';
   monster.group.visible = false;
@@ -273,13 +276,21 @@ addEventListener('mousedown', (e) => { if (game.state === 'playing' && controls.
 addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ---------------------------------------------------------------- dread: heartbeat and distortion when it's close
-let heartT = 0;
+let heartT = 0, heartLoop = null;
+function silenceHeart() { if (heartLoop) heartLoop.gain.gain.value = 0; }
 function updateDread(dt) {
   const near = monster.group.visible ? monster.distanceTo(camera.position) : 99;
-  heartT -= dt;
-  if (near < 7 && heartT <= 0) {
-    audio.play('heartbeat', { volume: 0.9 });
-    heartT = 0.4 + near * 0.11;
+  if (audio.buffers.heartbeat_fast) {
+    // the recorded heartbeat fades in as it gets close
+    if (!heartLoop) heartLoop = audio.loop('heartbeat_fast', 0);
+    const target = THREE.MathUtils.clamp(1 - (near - 1.5) / 8, 0, 1);
+    heartLoop.gain.gain.value += (target - heartLoop.gain.gain.value) * Math.min(1, dt * 3);
+  } else {
+    heartT -= dt;
+    if (near < 7 && heartT <= 0) {
+      audio.play('heartbeat', { volume: 0.9 });
+      heartT = 0.4 + near * 0.11;
+    }
   }
   if (monster.group.visible && !settings.reduceFlashing) fx.aberration = Math.max(fx.aberration, THREE.MathUtils.clamp(1 - near / 10, 0, 0.55));
 }

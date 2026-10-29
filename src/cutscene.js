@@ -532,12 +532,13 @@ export function createIntro(ctx) {
         shield.draw(0);                 // the car is in place before the black screen starts fading
         ui.typed.style.opacity = 0;
         rainLoop = audio.loop('car_rain_interior', 0.7);
-        const samAt = 1 + len('maya_intro', 4) + 0.5;
-        this.dur = Math.max(12, samAt + len('sam_hi', 2.5) + 1.2);
-        later(() => line('maya_intro', 'Maya', "Okay okay, we're live! Say hi to all eleven viewers, Sam.", 4), 1000);
-        later(() => line('sam_hi', 'Sam', '...hi. This is a terrible idea.', 2.5), samAt * 1000);
+        // timed on the shot's own clock so the lines can't drift from it if loading stutters
+        this.samAt = 1 + len('maya_intro', 4) + 0.4;
+        this.dur = this.samAt + len('sam_hi', 2.5) + 0.5; // out of the car right after Sam's line
       },
       update(t) {
+        if (t > 1 && !this.mayaSaid) { this.mayaSaid = true; line('maya_intro', 'Maya', "Okay okay, we're live! Say hi to all eleven viewers, Sam.", 4); }
+        if (t > this.samAt && !this.samSaid) { this.samSaid = true; line('sam_hi', 'Sam', '...hi. This is a terrible idea.', 2.5); }
         shield.draw(t);
         aim(V(-2.5, 1.25, 10), V(-1, 6.5, -30), 0.35);
       },

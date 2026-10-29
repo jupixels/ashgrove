@@ -437,6 +437,7 @@ export function createStory(ctx) {
         await w(len('sam_found_maya', 2.5));
         voice('maya_rescued', 'Maya', 'You came back. You actually came back. Go, GO, it\'s right behind us!', 4);
         await w(1.5);
+        voice('sam_run', 'Sam', 'RUN! Up the stairs, GO!', 1.5);
         mayaFollowStart(maya.group.position);
         monster.startAI({ at: monster.mode === 'ai' ? monster.group.position.clone() : undefined, avoid: player.position, state: 'chase' });
         monster.lastSeen = player.position.clone();
@@ -673,7 +674,14 @@ export function createStory(ctx) {
     if (f.key === 'F1' && S().chapter === 1) updateSightings(dt);
     if (f.key === 'F2') updateCorner(dt);
     if (f.key === 'F3' && !F().icu && inCells(5, 19, 7, 12)) { F().icu = true; icuBeats = 0; ui.message('The heart monitors are beeping. In time with your footsteps.', 3000); }
-    if (f.key === 'F4') updateCeiling();
+    if (f.key === 'F4') {
+      updateCeiling();
+      if (!F().mayaFreed && !F().mayaCalled && player.position.distanceTo(f.objects.mayaTable.pos.clone().setY(1.6)) < 9) {
+        F().mayaCalled = true;
+        voice('maya_table', 'Maya', "Sam?! Sam, get me off this thing! Cut the straps, hurry, it's coming back!", 5);
+        objective('Cut Maya free. Hold E at the table.');
+      }
+    }
     updateMaya(dt);
     // chase music
     const chasing = monster.mode === 'ai' && monster.state === 'chase';

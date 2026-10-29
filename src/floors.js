@@ -149,7 +149,7 @@ export const FLOORS = {
     name: 'Ground Floor',
     map: F1.rows(),
     needsPower: true,
-    ambience: 'hallway_room_tone',
+    ambience: 'rain_outside_muffled',   // the storm outside, through the walls
     arrive: {
       start: { x: 12.4, z: 12.3, yaw: yawEast },          // where the opening cutscene leaves you
       fromBelow: cell(42, 9, yawNorth),
@@ -217,8 +217,8 @@ export const FLOORS = {
   F3: {
     name: 'Surgery & ICU',
     map: F3.rows(),
-    ambience: 'hallway_room_tone',
     keycard: 'black',
+    ambience: 'fluorescent_buzz',
     arrive: { fromBelow: cell(2, 8, yawNorth) },
     doors: { '26,3': { code: '1031', label: "Dr. Voss's office" } },
     objects: [
