@@ -719,7 +719,6 @@ export function createStory(ctx) {
       }
     };
   };
-  };
 
   // ---------------------------------------------------------------- per frame
   story.update = (dt) => {
