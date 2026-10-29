@@ -4,7 +4,6 @@
 //   investigate heard something: goes to where the noise came from
 //   chase       sees you: runs at you, re-pathing as you move
 //   search      lost you: looks around where it last saw/heard you, then goes back to patrolling
-//   stunned     flashlight in its face: flinches for a moment
 //
 // Story scenes take it over with mode = 'script' and place/animate it directly.
 import * as THREE from 'three';
@@ -170,16 +169,6 @@ export function createMonster({ A, scene, audio }) {
     const inView = facing.dot(toPlayer) > 0.35 || dist < 3;
     const lit = player.flashOn || dist < 7;
     const sees = !player.hidden && dist < 18 && inView && lit && f.los(eye, pp);
-
-    // flashlight in the face: it flinches
-    if (m.state !== 'stunned' && sees && player.flashOn && dist < 7 && m.stunCooldown <= 0 && player.facing(eye) > 0.95 && facing.dot(toPlayer) > 0.6) {
-      m.state = 'stunned';
-      m.stunT = 1.6;
-      m.stunCooldown = 8;
-      anim('roar', { fade: 0.1, speed: 1.4 });
-      audio.play('monster_scream', { volume: 0.6, pos: group.position });
-      if (events.stunned) events.stunned();
-    }
 
     if (m.state === 'stunned') {
       m.stunT -= dt;

@@ -333,7 +333,6 @@ let intro = null;
 const monsterEvents = {
   caught: (how) => story.caught(how),
   spotted: () => {},
-  stunned: () => ui.message('It flinches from the light!', 1200),
 };
 
 function simulate(dt) {

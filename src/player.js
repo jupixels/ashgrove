@@ -241,7 +241,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     if (p.stamina <= 0 && !p.winded) { p.winded = true; audio.play('breathing_scared', { volume: 0.7 }); }
     if (p.winded && p.stamina > 0.35) p.winded = false;
     p.sprinting = !!k.ShiftLeft && p.moving && !p.crouch && move.y > 0 && !p.winded;
-    p.stamina = THREE.MathUtils.clamp(p.stamina + (p.sprinting ? -0.2 : p.winded ? 0.09 : 0.14) * dt, 0, 1);
+    p.stamina = THREE.MathUtils.clamp(p.stamina + (p.sprinting ? -0.12 : p.winded ? 0.12 : 0.2) * dt, 0, 1); // ~8 s of sprint, back in ~5 s
     ui.stamina(p.stamina, p.winded);
     const speed = (p.crouch ? 1.1 : p.sprinting ? 4.6 : 2.2) * (p.phoneUp ? 0.8 : 1);
 
