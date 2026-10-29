@@ -22,23 +22,40 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
 
   // Dust drifting through the air, only visible where the flashlight catches it.
   const BEAM = 7.5;
-  const DUST = 700, BOX = 9;
+  // Each speck has its own slow air current, sways and tumbles, settles a little, and only glints now and then as
+  // it turns in the light. Specks close to you are bigger and softer; it's sparse, like real dust in a torch beam.
+  const DUST = 160, BOX = 8;
   const dustPos = new Float32Array(DUST * 3).map(() => Math.random() * BOX);
+  const dustSeed = new Float32Array(DUST * 4).map(() => Math.random());
   const dustGeo = new THREE.BufferGeometry();
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  dustGeo.setAttribute('seed', new THREE.BufferAttribute(dustSeed, 4));
   const dustMat = new THREE.ShaderMaterial({
     uniforms: { strength: { value: 0 }, time: { value: 0 }, eye: { value: new THREE.Vector3() }, aim: { value: new THREE.Vector3(0, 0, -1) } },
-    vertexShader: `uniform float strength, time; uniform vec3 eye, aim; varying float vA;
+    vertexShader: `uniform float strength, time; uniform vec3 eye, aim; attribute vec4 seed; varying float vA;
       void main(){
-        vec3 p = position + vec3(sin(time * 0.3 + position.y * 3.0), sin(time * 0.2 + position.x * 2.0) - time * 0.04, cos(time * 0.25 + position.z * 3.0)) * 0.25;
-        p = mod(p - eye + ${(BOX / 2).toFixed(1)}, ${BOX.toFixed(1)}) + eye - ${(BOX / 2).toFixed(1)}; // an endless field of dust around you
+        float t = time;
+        // a gentle draft through the building, plus this speck's own drift and a slow settle
+        vec3 drift = vec3(0.05, -0.012, 0.025) + (seed.xyz - 0.5) * vec3(0.09, 0.04, 0.09);
+        // lazy figure-of-eight swirls at speck-specific speeds
+        float f = 0.25 + seed.w * 0.5;
+        vec3 sway = vec3(sin(t * f + seed.x * 31.0), sin(t * f * 1.3 + seed.y * 17.0) * 0.6, cos(t * f * 0.8 + seed.z * 23.0)) * (0.12 + seed.w * 0.2);
+        vec3 p = position + drift * t + sway;
+        p = mod(p - eye + ${(BOX / 2).toFixed(1)}, ${BOX.toFixed(1)}) + eye - ${(BOX / 2).toFixed(1)}; // an endless field around you
         vec3 to = p - eye; float d = length(to);
-        float inBeam = smoothstep(0.88, 0.97, dot(to / d, aim));
-        vA = inBeam * (1.0 - smoothstep(1.0, ${BEAM.toFixed(1)}, d)) * smoothstep(0.3, 0.8, d) * strength;
-        vec4 mv = viewMatrix * vec4(p, 1.0);
-        gl_Position = projectionMatrix * mv; gl_PointSize = 1.5;
+        float inBeam = smoothstep(0.86, 0.96, dot(to / d, aim));
+        // it only catches the light as it tumbles: a slow glint, not a steady glow
+        float glint = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(t * (1.5 + seed.w * 3.0) + seed.x * 40.0), 3.0);
+        vA = inBeam * glint * (1.0 - smoothstep(1.5, 6.0, d)) * smoothstep(0.35, 0.9, d) * strength;
+        gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);
+        gl_PointSize = clamp(3.2 / d, 1.0, 3.5) * (0.7 + seed.y * 0.6);
+        vA /= gl_PointSize * 0.6; // big close specks are out of focus, so dimmer
       }`,
-    fragmentShader: `varying float vA; void main(){ if (vA < 0.02) discard; gl_FragColor = vec4(vec3(1.0, 0.95, 0.85) * vA * 0.9, 1.0); }`,
+    fragmentShader: `varying float vA; void main(){
+        if (vA < 0.02) discard;
+        float r = length(gl_PointCoord - 0.5) * 2.0;
+        gl_FragColor = vec4(vec3(1.0, 0.95, 0.85) * vA * (1.0 - r * r) * 0.85, 1.0);
+      }`,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   });
   const dust = new THREE.Points(dustGeo, dustMat);
