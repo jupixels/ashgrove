@@ -3,6 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import * as T from './textures.js';
 import { GameAudio } from './audio.js';
 import { loadAssets } from './assets.js';
+import { createIntro } from './cutscene.js';
 
 // ---------------------------------------------------------------- map
 // # wall · . floor · P player · L light · F flickering light · B bed · G gurney · W wheelchair
@@ -338,7 +339,7 @@ flashlight.target = flashTarget;
 const flashAim = new THREE.Vector3();
 
 // ---------------------------------------------------------------- the monster
-// Mixamo character Ch25 with the downloaded Mixamo animations (converted by tools/convert_monster.py).
+// Mixamo character Ch25 with the downloaded Mixamo animations (converted by tools/convert_mixamo.py).
 const MONSTER_SCALE = 1.35; // ~2.4 m tall
 const monster = new THREE.Group();
 const monsterModel = A.models.monster.scene;
@@ -739,7 +740,7 @@ function updateSightings(dt) {
     monster.position.copy(pos);
     monster.visible = true;
     monsterAnim('idle', { fade: 0 });
-    audio.play('monster_drag_tubes', { volume: 0.35 });
+    audio.play(['monster_drag_tubes', 'monster_clicking', 'monster_humming'][Math.floor(Math.random() * 3)], { volume: 0.4 });
     break;
   }
 }
@@ -792,7 +793,9 @@ function updateStalker(dt) {
   if (path.length <= 2) return killPlayer();
   const next = path[Math.min(2, path.length - 2)]; // two cells closer, never onto the player
   monster.position.copy(cellPos(...next));
-  audio.play('monster_drag_tubes', { volume: THREE.MathUtils.clamp(1 - path.length / 14, 0.15, 0.8) });
+  // each step closer: a drag, a wet click or a sniff, louder as it gets near
+  const step = ['monster_drag_tubes', 'monster_clicking', 'monster_sniff'][Math.floor(Math.random() * 3)];
+  audio.play(step, { volume: THREE.MathUtils.clamp(1 - path.length / 14, 0.15, 0.9) });
 }
 
 function killPlayer() {
@@ -802,8 +805,9 @@ function killPlayer() {
   monster.position.copy(camera.position).addScaledVector(tmp.setY(0).normalize(), 0.9).setY(0);
   monster.lookAt(camera.position.x, 0, camera.position.z);
   monsterAnim('attack', { fade: 0.05, speed: 1.6, once: true });
-  audio.play('jumpscare_sting_1', { volume: 1 });
+  audio.play('jumpscare_sting_2', { volume: 1 });
   audio.play('monster_scream', { volume: 1 });
+  audio.play('kill_grab_gore', { volume: 1 });
   state.shake = 1;
   state.aberration = 1.5;
   state.red = 0.8;
@@ -851,7 +855,8 @@ function frame() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  if (controls.isLocked || (DEBUG && state.started)) simulate(dt);
+  if (intro.active) { if (!intro.frozen) intro.update(dt); } // debug can freeze it and step with introTick
+  else if (controls.isLocked || (DEBUG && state.started)) simulate(dt);
   updateLights(dt);
   if (monster.visible) mixer.update(dt);
   updatePresence();
@@ -883,7 +888,11 @@ if (DEBUG) {
   };
 }
 
+// What gets drawn: the game level through the player's eyes, or whatever the cutscene points at.
+const view = { scene, camera };
+
 function render(dt, t) {
+  const cam = view.camera;
   // screen effects
   state.aberration = Math.max(0, state.aberration - dt * 1.2);
   state.red = Math.max(0, state.red - dt * 0.8);
@@ -891,8 +900,8 @@ function render(dt, t) {
   const shake = state.shake * state.shake;
   state.shake = Math.max(0, state.shake - dt * 1.5);
   const ox = (Math.random() - 0.5) * shake * 0.12, oy = (Math.random() - 0.5) * shake * 0.12;
-  camera.position.x += ox;
-  camera.position.y += oy;
+  cam.position.x += ox;
+  cam.position.y += oy;
 
   post.uniforms.time.value = t;
   post.uniforms.aberration.value = state.aberration;
@@ -900,14 +909,56 @@ function render(dt, t) {
   post.uniforms.fade.value = state.fade;
 
   renderer.setRenderTarget(target);
-  renderer.render(scene, camera);
+  renderer.render(view.scene, cam);
   renderer.setRenderTarget(null);
   renderer.render(postScene, postCam);
 
-  camera.position.x -= ox;
-  camera.position.y -= oy;
+  cam.position.x -= ox;
+  cam.position.y -= oy;
 }
-frame();
+
+// ---------------------------------------------------------------- opening cutscene
+let ambienceOn = false;
+function startAmbience() {
+  if (ambienceOn) return;
+  ambienceOn = true;
+  audio.startAmbience();
+}
+
+const intro = createIntro({
+  mainScene: scene, psx, audio, state, lights, monster, monsterAnim, startAmbience, decal, blood: A.tex.blood,
+  mayaModel: A.models.maya,
+  aspect: () => camera.aspect,
+  setView(s, c) { view.scene = s; view.camera = c; },
+  onDone: startGame,
+});
+if (DEBUG) {
+  window.game.intro = intro;
+  window.game.introTick = (seconds = 1, dt = 1 / 30) => {
+    for (let s = 0; s < seconds; s += dt) {
+      intro.update(dt);
+      updateLights(dt);
+      if (monster.visible) mixer.update(dt);
+      updatePresence();
+      render(dt, clock.elapsedTime);
+    }
+  };
+}
+
+// After the cutscene (or straight away in debug mode): you stand where Maya was taken, her phone at your feet.
+function startGame() {
+  view.scene = scene;
+  view.camera = camera;
+  camera.position.set(12.4, EYE, 12.3);
+  camera.rotation.set(0, -Math.PI / 2, 0);
+  controls.lock();
+  state.started = true;
+  state.flashOn = true;
+  state.fade = 1;
+  state.fadeTarget = 0;
+  startAmbience();
+  setTimeout(() => setObjective('Find the keycards. Lift the lockdown.'), 1500);
+}
 
 // ---------------------------------------------------------------- start / pause
 ui.title.addEventListener('click', async () => {
@@ -917,15 +968,10 @@ ui.title.addEventListener('click', async () => {
     audioReady = true;
   }
   ui.title.style.display = 'none';
-  controls.lock();
-  if (!state.started) {
-    state.started = true;
-    state.fade = 1;
-    state.fadeTarget = 0;
-    audio.startAmbience();
-    setTimeout(() => setObjective('Find a way out.'), 1500);
-    setTimeout(() => showMessage('"Maya? ...Maya, this isn\'t funny."', 3500), 3000);
-  }
+  if (state.started) return controls.lock();
+  if (DEBUG && location.search.includes('nointro')) return startGame();
+  flashlight.intensity = 0;
+  intro.start();
 });
 ui.pause.addEventListener('click', () => {
   if (ui.pause.dataset.restart) return location.reload();
@@ -936,3 +982,5 @@ controls.addEventListener('unlock', () => {
   ui.cross.style.display = 'none';
   if (state.started && state.phase !== 'done') ui.pause.style.display = 'flex';
 });
+
+frame();

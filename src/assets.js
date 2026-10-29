@@ -12,6 +12,7 @@ const MODELS = {
   machine: 'hospital/machine_2.glb',
   tray: 'hospital/tray_1.glb',
   monster: 'monster.glb',
+  maya: 'maya.glb',
 };
 
 const IMAGES = {

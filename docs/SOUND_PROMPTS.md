@@ -25,7 +25,7 @@ horrorgame/assets/audio/voice/
 
 | ★ | Filename | Duration | Prompt |
 |---|----------|----------|--------|
-| ★★★ | `hospital_drone.mp3` | 22s | Dark ambient horror drone, deep low rumble with faint dissonant metallic tones, abandoned building, oppressive and uneasy, seamless loop, no melody |
+| ✓ | ~~`hospital_drone.mp3`~~ | — | **Not needed:** the game's built-in drone is the one we're keeping. |
 | ★★★ | `hallway_room_tone.mp3` | 22s | Empty abandoned hospital hallway room tone, distant wind through broken windows, faint water dripping, subtle building creaks, seamless loop |
 | ★★★ | `fluorescent_buzz.mp3` | 10s | Old fluorescent light tube buzzing and humming, electrical whine, occasional flicker crackle, seamless loop |
 | ★★ | `morgue_ambience.mp3` | 22s | Cold basement morgue ambience, refrigeration units humming, metal ticking, distant pipe dripping, very quiet and eerie, seamless loop |
@@ -98,6 +98,7 @@ horrorgame/assets/audio/voice/
 | ★ | Filename | Duration | Prompt |
 |---|----------|----------|--------|
 | ★★ | `car_rain_interior.mp3` | 15s | Inside a parked car at night, heavy rain drumming on the roof, windshield wipers slowly swiping |
+| ★★ | `car_door.mp3` | 2s | Car door opening and slamming shut in heavy rain at night, muffled thunk |
 | ★★ | `fence_rattle.mp3` | 3s | Climbing through a chain link fence, metal rattling and scraping |
 | ★★ | `pa_crackle.mp3` | 3s | Old hospital PA speaker system crackling on with feedback hum |
 | ★★ | `vent_scrape_drag.mp3` | 4s | Something being dragged quickly up through a metal air vent, scraping and banging |
@@ -116,6 +117,7 @@ Use **Text to Speech** (not Sound Effects) for these. For the PA, use a calm old
 |----------|------|
 | `maya_intro.mp3` | "Okay okay, we're live! Say hi to all eleven viewers, Sam." |
 | `maya_window.mp3` | "Dude... the fourth floor window. Was that light on a second ago?" |
+| `maya_door.mp3` | "Side door's open. Somebody propped it with a brick." |
 | `maya_signin.mp3` | "Wait. Look at this sign-in book. The last entry is... tonight's date." |
 | `maya_scream.mp3` | (Use Sound Effects): *Teenage girl screaming in terror, being dragged away, scream fading upward* |
 | `maya_walkie_1.mp3` | "Sam... Sam, can you hear me? It took me upstairs. It's... it's sewing something. Please. Find the keycards. Get the lockdown off." |
@@ -123,6 +125,14 @@ Use **Text to Speech** (not Sound Effects) for these. For the PA, use a calm old
 | `maya_walkie_3.mp3` | "It's coming back. I can hear the tubes dragging. Please hurry." |
 | `maya_fake.mp3` | "Sam! I got free! I'm in the bathroom on two, come get me!" (same voice but slightly *off*: lower the stability slider) |
 | `maya_rescued.mp3` | "You came back. You actually came back. Go, GO, it's right behind us!" |
+
+**Sam** (the player, a teen: pick any teen voice you like. Quiet, nervous, trying to sound braver than they are):
+| Filename | Line |
+|----------|------|
+| `sam_hi.mp3` | "...hi. This is a terrible idea." (awkward, half-laughing) |
+| `sam_comeback.mp3` | "Maya. Maya, come back." (low, uneasy, almost a whisper) |
+| `sam_scream.mp3` | "MAYA!" (screamed, voice cracking; turn stability down) |
+| `sam_walkie.mp3` | "Maya?! Maya, where are you?!" (panicked, out of breath, into a walkie-talkie) |
 
 **PA System / Dr. Voss** (calm, warm, older male voice. Creepy because it's kind):
 | Filename | Line |

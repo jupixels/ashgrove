@@ -16,8 +16,40 @@ const FILES = {
   door_creak_open: 'sfx/door_creak_open.mp3',
   monster_scream: 'monster/monster_scream.mp3',
   monster_growl_distant: 'monster/monster_growl_distant.mp3',
+  monster_clicking: 'monster/monster_clicking.mp3',
+  monster_sniff: 'monster/monster_sniff.mp3',
+  monster_humming: 'monster/monster_humming.mp3',
+  monster_ceiling_crawl: 'monster/monster_ceiling_crawl.mp3',
+  monster_ceiling_burst: 'monster/monster_ceiling_burst.mp3',
+  kill_grab_gore: 'monster/kill_grab_gore.mp3',
+  stitching_sound: 'monster/stitching_sound.mp3',
+  jumpscare_sting_2: 'scares/jumpscare_sting_2.mp3',
+  glass_shatter_grab: 'scares/glass_shatter_grab.mp3',
   jumpscare_sting_1: 'scares/jumpscare_sting_1.mp3',
   lights_slam_on: 'scares/lights_slam_on.mp3',
+  // opening cutscene
+  car_rain_interior: 'sfx/car_rain_interior.mp3',
+  car_door: 'sfx/car_door.mp3',
+  tension_riser: 'scares/tension_riser.mp3',
+  music_box_lullaby: 'scares/music_box_lullaby.mp3',
+  wheelchair_roll: 'scares/wheelchair_roll.mp3',
+  fence_rattle: 'sfx/fence_rattle.mp3',
+  pa_crackle: 'sfx/pa_crackle.mp3',
+  vent_scrape_drag: 'sfx/vent_scrape_drag.mp3',
+  phone_drop: 'sfx/phone_drop.mp3',
+  walkie_static: 'sfx/walkie_static.mp3',
+  metal_shutter_slam: 'scares/metal_shutter_slam.mp3',
+  maya_intro: 'voice/maya_intro.mp3',
+  maya_window: 'voice/maya_window.mp3',
+  maya_signin: 'voice/maya_signin.mp3',
+  maya_door: 'voice/maya_door.mp3',
+  maya_scream: 'voice/maya_scream.mp3',
+  maya_walkie_1: 'voice/maya_walkie_1.mp3',
+  sam_hi: 'voice/sam_hi.mp3',
+  sam_comeback: 'voice/sam_comeback.mp3',
+  sam_scream: 'voice/sam_scream.mp3',
+  sam_walkie: 'voice/sam_walkie.mp3',
+  pa_lockdown: 'voice/pa_lockdown.mp3',
 };
 
 export class GameAudio {
@@ -71,6 +103,41 @@ export class GameAudio {
     }
     const synth = this.synth[name];
     return synth ? synth.call(this, volume) : null;
+  }
+
+  // A looping sound with a fade-out stop. Falls back to filtered noise (rain/hiss) if the file is missing.
+  loop(name, volume = 1) {
+    const g = this.ctx.createGain();
+    g.gain.value = volume;
+    g.connect(this.master);
+    let src;
+    if (this.buffers[name]) {
+      src = this.ctx.createBufferSource();
+      src.buffer = this.buffers[name];
+      src.loop = true;
+      src.connect(g);
+    } else {
+      src = this.ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      src.loop = true;
+      const hp = this.ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 400;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 3500;
+      g.gain.value = volume * 0.18;
+      src.connect(hp).connect(lp).connect(g);
+    }
+    src.start();
+    return {
+      stop: (fade = 0.8) => {
+        const t = this.ctx.currentTime;
+        g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0, t + fade);
+        src.stop(t + fade + 0.05);
+      },
+    };
   }
 
   // pace: 'sneak' (crouched), 'walk' or 'run'
@@ -156,6 +223,30 @@ export class GameAudio {
       [400, 520, 690].forEach((f) => this.tone('sawtooth', f, f * 1.6, v * 0.15, 1.2));
       this.noiseBurst(v, 1800, 1, 0.01, 1.3);
     },
+    car_door(v) { this.noiseBurst(v * 0.5, 900, 1, 0.003, 0.15); this.tone('sine', 90, 50, v * 0.5, 0.2); },
+    fence_rattle(v) { for (let i = 0; i < 6; i++) setTimeout(() => this.noiseBurst(v * 0.4, 2500 + Math.random() * 1500, 6, 0.002, 0.08), i * 70); },
+    metal_shutter_slam(v) { this.noiseBurst(v * 1.2, 300, 0.7, 0.003, 1.4); this.tone('sawtooth', 70, 30, v * 0.6, 1.2); },
+    pa_crackle(v) { this.noiseBurst(v * 0.35, 1800, 2, 0.05, 0.8); this.tone('sine', 60, 60, v * 0.15, 1.0); },
+    phone_drop(v) { this.noiseBurst(v * 0.6, 3000, 4, 0.001, 0.05); setTimeout(() => this.noiseBurst(v * 0.35, 3500, 4, 0.001, 0.04), 110); },
+    vent_scrape_drag(v) { for (let i = 0; i < 5; i++) setTimeout(() => this.noiseBurst(v * 0.5, 600 + i * 250, 3, 0.05, 0.35), i * 260); },
+    walkie_static(v) { this.noiseBurst(v * 0.5, 2200, 0.6, 0.01, 0.7, 'bandpass'); },
+    maya_scream(v) {
+      // placeholder only: a rising, falling shriek (the ElevenLabs scream replaces it)
+      const t = this.ctx.currentTime;
+      const o = this.ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(700, t);
+      o.frequency.linearRampToValueAtTime(1100, t + 0.4);
+      o.frequency.exponentialRampToValueAtTime(500, t + 1.6);
+      const f = this.ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = 1200;
+      const g = this.ctx.createGain();
+      this.env(g, t, v * 0.25, 0.05, 1.6);
+      o.connect(f).connect(g).connect(this.master);
+      o.start(t);
+      o.stop(t + 1.8);
+    },
     lights_slam_on(v) { for (let i = 0; i < 4; i++) setTimeout(() => this.tone('square', 60, 40, v * 0.4, 0.2), i * 140); },
   };
 
@@ -185,16 +276,5 @@ export class GameAudio {
     lfoGain.gain.value = 80;
     lfo.connect(lfoGain).connect(f.frequency);
     lfo.start();
-    const air = this.ctx.createBufferSource();
-    air.buffer = this.noiseBuf;
-    air.loop = true;
-    const af = this.ctx.createBiquadFilter();
-    af.type = 'bandpass';
-    af.frequency.value = 400;
-    af.Q.value = 0.4;
-    const ag = this.ctx.createGain();
-    ag.gain.value = 0.025;
-    air.connect(af).connect(ag).connect(this.master);
-    air.start();
   }
 }

@@ -27,6 +27,7 @@ def main():
     ap.add_argument('files', nargs='+')
     ap.add_argument('--peak', type=float, default=-3.0, help='target peak in dB')
     ap.add_argument('--keep-lead', type=float, default=0.01, help='seconds of lead-in kept before the sound starts')
+    ap.add_argument('--lufs', type=float, help='match perceived loudness instead of peak (voices: -16, screams: -13)')
     a = ap.parse_args()
     for f in a.files:
         path = os.path.abspath(f)
@@ -38,11 +39,16 @@ def main():
         log = probe(backup, 'silencedetect=n=-45dB:d=0.03')
         m = re.search(r'silence_start: 0(?:\.0+)?\n.*?silence_end: ([\d.]+)', log, re.S)
         start = max(0.0, float(m.group(1)) - a.keep_lead) if m else 0.0
-        peak = float(re.search(r'max_volume: (-?[\d.]+) dB', probe(backup, 'volumedetect')).group(1))
-        gain = a.peak - peak
+        if a.lufs is not None:
+            level = f'loudnorm=I={a.lufs}:TP=-1.5:LRA=11'
+            note = f'loudness {a.lufs} LUFS'
+        else:
+            peak = float(re.search(r'max_volume: (-?[\d.]+) dB', probe(backup, 'volumedetect')).group(1))
+            level = f'volume={a.peak - peak:.1f}dB'
+            note = f'gain {a.peak - peak:+.1f} dB'
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-ss', f'{start:.3f}', '-i', backup,
-                        '-af', f'volume={gain:.1f}dB', '-b:a', '160k', path], check=True)
-        print(f'{rel}: trimmed {start:.2f}s, gain {gain:+.1f} dB')
+                        '-af', level, '-ar', '44100', '-b:a', '160k', path], check=True)
+        print(f'{rel}: trimmed {start:.2f}s, {note}')
 
 
 if __name__ == '__main__':
