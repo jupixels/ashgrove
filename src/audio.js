@@ -75,6 +75,7 @@ const FILES = {
   // opening cutscene
   car_rain_interior: 'sfx/car_rain_interior.mp3',
   car_door: 'sfx/car_door.mp3',
+  dog_bark_distant: 'sfx/dog_bark_distant.mp3',
   tension_riser: 'scares/tension_riser.mp3',
   music_box_lullaby: 'scares/music_box_lullaby.mp3',
   wheelchair_roll: 'scares/wheelchair_roll.mp3',

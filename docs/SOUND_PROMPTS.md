@@ -123,7 +123,7 @@ Use **Text to Speech** (not Sound Effects) for these. For the PA, use a calm old
 | `maya_walkie_1.mp3` | "Sam... Sam, can you hear me? It took me upstairs. It's... it's sewing something. Please. Find the keycards. Get the lockdown off." |
 | `maya_walkie_2.mp3` | "Don't let it hear you. It can't see well. It listens." |
 | `maya_walkie_3.mp3` | "It's coming back. I can hear the tubes dragging. Please hurry." |
-| `maya_fake.mp3` | "Sam! I got free! I'm in the bathroom on two, come get me!" (same voice but slightly *off*: lower the stability slider) |
+| `maya_fake.mp3` | "Sam! I got free! I'm in the bathroom on one, come get me!" (same voice but slightly *off*: lower the stability slider) |
 | `maya_rescued.mp3` | "You came back. You actually came back. Go, GO, it's right behind us!" |
 
 **Sam** (the player, a teen: pick any teen voice you like. Quiet, nervous, trying to sound braver than they are):

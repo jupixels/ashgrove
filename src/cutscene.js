@@ -549,6 +549,7 @@ export function createIntro(ctx) {
         if (rainLoop) rainLoop.stop();
         rainLoop = audio.loop('car_rain_interior', 1.0);
         audio.play('car_door', { volume: 0.9 }); // out of the car
+        later(() => audio.play('dog_bark_distant', { volume: 0.7 }), 2600); // somewhere out in the dark
         ext.windowOn(true);
         this.dur = Math.max(11, 7.2 + len('maya_window', 4) + 1);
       },

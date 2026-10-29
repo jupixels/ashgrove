@@ -266,10 +266,10 @@ export function createStory(ctx) {
         f.emergency = true;
         audio.play('lights_slam_on', { volume: 0.8 });
         await w(len('voss_leaving', 4) + 2.5);
-        walkie('maya_fake', "Sam! I got free! I'm in the bathroom on two, come get me!", 5);
+        walkie('maya_fake', "Sam! I got free! I'm in the bathroom on one, come get me!", 5);
         F().walkieFake = true;
         await w(5);
-        objective('Maya? The restroom... past the cafeteria.');
+        objective('Find Maya: the restroom on this floor, past the cafeteria.');
       });
     },
     vending(f) {
