@@ -377,52 +377,6 @@ function buildWindshield() {
   };
 }
 
-// ---------------------------------------------------------------- Maya
-// The Mixamo girl (Ch02) with walking, breathing-idle and scared-idle animations (tools/convert_mixamo.py).
-function setupMaya(gltf, psx) {
-  const model = gltf.scene;
-  model.traverse((o) => {
-    if (!o.isMesh) return;
-    const map = o.material.map;
-    if (map) map.magFilter = map.minFilter = THREE.NearestFilter;
-    const hair = o.material.name.includes('hair');
-    o.material = psx(new THREE.MeshLambertMaterial({ map, alphaTest: hair ? 0.5 : 0, side: hair ? THREE.DoubleSide : THREE.FrontSide }));
-    o.castShadow = true;
-    o.frustumCulled = false;
-  });
-  const group = new THREE.Group();
-  group.add(model);
-  const mixer = new THREE.AnimationMixer(model);
-  const actions = {};
-  for (const clip of gltf.animations) {
-    // walk in place: we move her ourselves, so lock the hips except vertically
-    const hips = clip.tracks.find((t) => t.name.endsWith('Hips.position'));
-    if (hips) {
-      const v = hips.values;
-      const size = [0, 1, 2].map((a) => Math.abs(v[a]));
-      const up = size.indexOf(Math.max(...size));
-      for (let i = 0; i < v.length; i += 3) for (let a = 0; a < 3; a++) if (a !== up) v[i + a] = v[a];
-    }
-    actions[clip.name] = mixer.clipAction(clip);
-  }
-  // start in the breathing idle at full weight so she never shows her bind (T) pose
-  let current = actions.idle || null;
-  if (current) current.play();
-  mixer.update(0);
-  return {
-    group,
-    mixer,
-    hand: model.getObjectByName('mixamorigRightHand'),
-    play(name, speed = 1) {
-      const a = actions[name];
-      if (!a || a === current) return;
-      a.reset().setEffectiveTimeScale(speed).fadeIn(0.3).play();
-      if (current) current.fadeOut(0.3);
-      current = a;
-    },
-  };
-}
-
 // ---------------------------------------------------------------- the timeline
 export function createIntro(ctx) {
   const { mainScene, psx, audio, state, lights, monster, monsterAnim } = ctx;
@@ -443,10 +397,10 @@ export function createIntro(ctx) {
   mayaLight.target = mayaTarget;
   const mayaGlow = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
   mayaGlow.visible = false;
-  const mayaRig = setupMaya(ctx.mayaModel, psx);
+  const mayaRig = ctx.mayaRig; // shared with the rest of the game (src/maya.js)
   const maya = mayaRig.group;
   maya.visible = false;
-  mainScene.add(mayaLight, mayaTarget, mayaGlow, maya);
+  ctx.floorGroup.add(mayaLight, mayaTarget, mayaGlow); // cleaned up with the ground floor
   const handPos = V(0, 0, 0), mayaFwd = V(0, 0, 0);
   // Stand her on the floor at `pos`, facing `look`.
   function placeMaya(pos, look) {
@@ -482,7 +436,7 @@ export function createIntro(ctx) {
   phoneLight.position.y = 0.08;
   phone.add(phoneLight);
   phone.visible = false;
-  mainScene.add(phone);
+  ctx.floorGroup.add(phone);
   const GRAB = V(14, 0, 11.8);          // where she is standing when it takes her
   const PHONE_REST = V(13.1, 0.02, 12.2);
 
@@ -633,6 +587,7 @@ export function createIntro(ctx) {
       chat: [[2, 'kyle_b', 'its so dark'], [5.5, 'mira.x', 'TONIGHTS date??'], [7, 'dt_99', 'nah im out'], [9, 'kyle_b', 'its fake. its gotta be fake']],
       enter() {
         useScene('int');
+        ctx.setPower(true);
         lightsOff(true);
         mainScene.fog.density = 0.07;
         samLight.intensity = 22;
@@ -815,6 +770,7 @@ export function createIntro(ctx) {
   function onKey(e) { if (e.code === 'Space') skipHeld = e.type === 'keydown' ? Math.max(skipHeld, 0.001) : 0; }
 
   function finish() {
+    ctx.setPower(false); // and it's dead again when you start playing
     active = false;
     removeEventListener('keydown', onKey);
     removeEventListener('keyup', onKey);

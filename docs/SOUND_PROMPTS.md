@@ -143,3 +143,30 @@ Use **Text to Speech** (not Sound Effects) for these. For the PA, use a calm old
 | `voss_leaving.mp3` | "Leaving so soon? But we've only just admitted you." |
 | `voss_tape_1.mp3` | "Continuance Program, entry one. Patient fourteen is responding. The body wants to live. It simply needs... help." |
 | `voss_tape_8.mp3` | "If anyone finds this... I didn't run. I'm still here. I'm all of them now. And they're so very hungry." |
+
+---
+
+## 7. Full game: the rest of the story → `voice/`
+
+**Dr. Voss's tapes** (same voice as tapes 1 and 8; calm, tired, recorded on an old cassette):
+| Filename | Line |
+|----------|------|
+| `voss_tape_2.mp3` | "Entry two. We shared tissue between patients nine and eleven. Eleven woke up. Nine did not. Eleven speaks with nine's voice now." |
+| `voss_tape_3.mp3` | "The night staff have stopped coming to Ward C. They say the patients hum at night. Patients in comas do not hum." |
+| `voss_tape_4.mp3` | "I have joined six of them. They share a heartbeat now. When one sleeps, the others watch. They are never all asleep." |
+| `voss_tape_5.mp3` | "It asked for me today. Not by name. It used the voice of a nurse who left us in March. I have not told the board." |
+| `voss_tape_6.mp3` | "The children's ward is closed. I won't write down why. If you hear the music box, do not go towards it." |
+| `voss_tape_7.mp3` | "The quarantine protocol is ready. If it gets out of Ward C, the building seals itself. Nobody leaves. Not even me." |
+
+**Maya** (endings):
+| Filename | Line |
+|----------|------|
+| `maya_table.mp3` | "Sam?! Sam, get me off this thing! Cut the straps, hurry, it's coming back!" (strapped down, terrified) |
+| `maya_left_behind.mp3` | "Why'd you leave me, Sam?" (soft, wrong, from the back seat; lower stability) |
+| `maya_together.mp3` | "We're out. We're actually out." (exhausted, crying-laughing, at dawn) |
+
+**Sam**:
+| Filename | Line |
+|----------|------|
+| `sam_found_maya.mp3` | "Maya! I'm here, I've got you. Hold still." (whispered, urgent) |
+| `sam_run.mp3` | "RUN! Up the stairs, GO!" (screamed) |

@@ -80,3 +80,81 @@ export function writingTex(text) {
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   return t;
 }
+
+// Morgue drawer fronts: a grid of steel doors with handles and number plates.
+export function drawersTex() {
+  return makeTex(128, 64, 211, (g, w, h, r) => {
+    g.fillStyle = '#5e605c';
+    g.fillRect(0, 0, w, h);
+    g.font = 'bold 7px sans-serif';
+    g.textAlign = 'center';
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 4; col++) {
+        const x = col * 32, y = row * 32;
+        g.fillStyle = '#7a7c77';
+        g.fillRect(x + 2, y + 2, 28, 28);
+        g.fillStyle = '#2a2b29';
+        g.fillRect(x + 10, y + 18, 12, 3);
+        g.fillStyle = '#d8d4c4';
+        g.fillRect(x + 11, y + 6, 10, 7);
+        g.fillStyle = '#222';
+        g.fillText(String(1 + col + row * 4 + (r() < 0 ? 0 : 0)), x + 16, y + 12);
+      }
+    }
+    for (let i = 0; i < 8; i++) blob(g, r() * w, r() * h, 4 + r() * 10, 'rgba(60,40,20,0.5)');
+    noise(g, w, h, r, 18);
+  });
+}
+
+// A child's crayon drawing of the monster: a tall scribbled figure with many mouths.
+export function crayonTex(seed = 1) {
+  const t = makeTex(64, 64, 300 + seed, (g, w, h, r) => {
+    g.fillStyle = '#e8e2cc';
+    g.fillRect(4, 4, w - 8, h - 8);
+    g.lineWidth = 2;
+    g.strokeStyle = '#1a1a1a';
+    g.beginPath(); // tall body
+    g.moveTo(32, 14); g.lineTo(30, 46); g.lineTo(24, 58); g.moveTo(30, 46); g.lineTo(36, 58);
+    g.moveTo(31, 22); g.lineTo(16, 40); g.moveTo(31, 22); g.lineTo(46, 40);
+    g.stroke();
+    g.fillStyle = '#1a1a1a';
+    g.beginPath(); g.arc(32, 12, 6, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#b01010'; // mouths
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(28 + r() * 8, 20 + i * 6, 2, 0, Math.PI); g.stroke(); }
+    g.strokeStyle = '#3050c0'; // a small child figure
+    g.beginPath(); g.moveTo(12, 50); g.lineTo(12, 58); g.moveTo(9, 53); g.lineTo(15, 53); g.stroke();
+    g.beginPath(); g.arc(12, 47, 2.5, 0, Math.PI * 2); g.stroke();
+    noise(g, w, h, r, 10);
+  });
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
+// Broken glass on the floor: glinting shards.
+export function glassTex() {
+  const t = makeTex(64, 64, 401, (g, w, h, r) => {
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 40; i++) {
+      const x = 8 + r() * 48, y = 8 + r() * 48, s = 1 + r() * 4;
+      g.fillStyle = `rgba(${180 + r() * 60},${200 + r() * 55},${210 + r() * 45},${0.5 + r() * 0.5})`;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + s, y + s * 0.4); g.lineTo(x + s * 0.3, y + s); g.fill();
+    }
+  });
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
+
+// A painted or lit sign (STAIRS, ELEVATOR, EXIT...).
+export function signTex(text, bg = '#1c3a1e', fg = '#e8f0d8') {
+  const t = makeTex(128, 32, 77, (g, w, h) => {
+    g.fillStyle = bg;
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = fg;
+    g.font = 'bold 18px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, w / 2, h / 2 + 1);
+  });
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}
