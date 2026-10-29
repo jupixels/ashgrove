@@ -680,15 +680,15 @@ export function createStory(ctx) {
     const power = calm ? 0.35 : 1;
     deathScare = (dt) => {
       t += dt;
-      // from arm's length to right in your face in a blink, then it stays there and its head shakes violently
-      const d = t < 0.13 ? 1.0 - 0.68 * (t / 0.13) ** 2 : 0.32;
+      // no build-up: it's in your face the instant you're caught, slamming in a touch too close, then its head thrashes
+      const d = t < 0.08 ? 0.24 + 0.08 * (t / 0.08) : 0.32;
       want.copy(cam.position).addScaledVector(dir, d);
       if (t < 0.2) { // the lunge carries the whole body in; after that it stays planted
         monster.group.lookAt(cam.position.x, monster.group.position.y, cam.position.z);
         monster.headPos(head);
         monster.group.position.add(want.clone().sub(head)); // move the body so its face lands right there
       }
-      if (t > 0.13) {
+      if (t > 0.05) {
         twitchT -= dt;
         if (twitchT <= 0) { // a new jerk every few frames: the head snaps side to side, not a smooth wobble
           twitchT = 0.035 + Math.random() * 0.045;
@@ -718,6 +718,7 @@ export function createStory(ctx) {
         setTimeout(() => ctx.died(text), 900);
       }
     };
+    deathScare(0); // place it now: the very next frame drawn is its face
   };
 
   // ---------------------------------------------------------------- per frame
