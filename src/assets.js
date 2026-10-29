@@ -2,6 +2,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// this build's version ("?v=...", stamped by tools/stamp_version.py) so updated files are never served from cache
+export const VERSION = new URL(import.meta.url).search;
+
 const MODELS = {
   bed: 'hospital/bed_1.glb',
   gurney: 'hospital/bed_2.glb',
@@ -82,8 +85,8 @@ export async function loadAssets(onProgress) {
   const img = {};
   const models = {};
   await Promise.all([
-    ...Object.entries(IMAGES).map(async ([k, f]) => { img[k] = await loadImage('assets/textures/' + f); tick(); }),
-    ...Object.entries(MODELS).map(async ([k, f]) => { models[k] = await gltf.loadAsync('assets/models/' + f); tick(); }),
+    ...Object.entries(IMAGES).map(async ([k, f]) => { img[k] = await loadImage('assets/textures/' + f + VERSION); tick(); }),
+    ...Object.entries(MODELS).map(async ([k, f]) => { models[k] = await gltf.loadAsync('assets/models/' + f + VERSION); tick(); }),
   ]);
 
   return {

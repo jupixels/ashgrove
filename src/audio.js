@@ -1,4 +1,5 @@
 // Audio: plays the ElevenLabs files from assets/audio if they exist, otherwise a synthesized placeholder.
+import { VERSION } from './assets.js';
 
 // footstep_tile_1..8 are loaded separately: any that exist get used (see tools/split_steps.py).
 const FOOTSTEPS = 8;
@@ -107,7 +108,7 @@ export class GameAudio {
     this.buffers = {};
     this.noiseBuf = this.makeNoise();
     const steps = Array.from({ length: FOOTSTEPS }, (_, i) => ['footstep_tile_' + (i + 1), `sfx/footstep_tile_${i + 1}.mp3`]);
-    await Promise.all([...Object.entries(FILES), ...steps].map(([name, path]) => this.tryLoad(name, 'assets/audio/' + path)));
+    await Promise.all([...Object.entries(FILES), ...steps].map(([name, path]) => this.tryLoad(name, 'assets/audio/' + path + VERSION)));
     this.steps = steps.map(([name]) => name).filter((name) => this.buffers[name]);
     this.lastStep = -1;
   }
