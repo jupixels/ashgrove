@@ -681,7 +681,7 @@ export function createStory(ctx) {
     deathScare = (dt) => {
       t += dt;
       // from arm's length to right in your face in a blink, then it stays there and its head shakes violently
-      const d = t < 0.13 ? 1.0 - 0.58 * (t / 0.13) ** 2 : 0.42;
+      const d = t < 0.13 ? 1.0 - 0.68 * (t / 0.13) ** 2 : 0.32;
       want.copy(cam.position).addScaledVector(dir, d);
       if (t < 0.2) { // the lunge carries the whole body in; after that it stays planted
         monster.group.lookAt(cam.position.x, monster.group.position.y, cam.position.z);
@@ -692,9 +692,9 @@ export function createStory(ctx) {
         twitchT -= dt;
         if (twitchT <= 0) { // a new jerk every few frames: the head snaps side to side, not a smooth wobble
           twitchT = 0.035 + Math.random() * 0.045;
-          turn = (Math.random() - 0.5) * 0.7 * power;
-          nod = (Math.random() - 0.5) * 0.35 * power;
-          tilt = (Math.random() - 0.5) * 0.5 * power;
+          turn = (Math.random() - 0.5) * 1.15 * power;
+          nod = (Math.random() - 0.5) * 0.6 * power;
+          tilt = (Math.random() - 0.5) * 0.85 * power;
         }
         monster.twistHead(nod, turn, tilt);
       }
