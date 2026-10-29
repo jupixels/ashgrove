@@ -524,15 +524,17 @@ export function createStory(ctx) {
     { id: 2, area: [22, 24, 8, 10], at: [23, 7], behind: true },  // the staff room doorway
     { id: 3, area: [29, 37, 8, 12], at: [31, 7], behind: true },  // the cafeteria doorway
   ];
-  const sight = { current: null, timer: 0, lit: 0, cooldown: 0 };
+  const sight = { current: null, timer: 0, lit: 0, look: 0, cooldown: 0 };
   function updateSightings(dt) {
     sight.cooldown -= dt;
     if (sight.current) {
       sight.timer += dt;
       monster.group.lookAt(player.position.x, 0, player.position.z);
       const dist = monster.distanceTo(player.position);
-      // the ones that wait behind you: the moment you turn and see it, it screams and is gone
-      if (sight.current.behind && sight.timer > 0.15 && player.facingFlat(monster.group.position) > 0.88 && dist < 16) {
+      // the ones that wait behind you: turn and see it, and it holds your stare a moment... then screams and is gone
+      const staring = player.facingFlat(monster.group.position) > 0.88 && dist < 16;
+      sight.look = staring ? sight.look + dt : Math.max(0, sight.look - dt * 0.5);
+      if (sight.current.behind && sight.look > 1.3) {
         sight.current = null;
         sight.cooldown = 8;
         scare(0.9);
@@ -559,7 +561,7 @@ export function createStory(ctx) {
       if (s.behind && player.facingFlat(pos) > -0.2) continue;
       F()[`sight${i}`] = true;
       sight.current = s;
-      sight.timer = sight.lit = 0;
+      sight.timer = sight.lit = sight.look = 0;
       monster.mode = 'script';
       monster.show(pos, player.position);
       monster.anim('idle', { fade: 0 });
