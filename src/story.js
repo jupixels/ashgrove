@@ -669,34 +669,35 @@ export function createStory(ctx) {
     dir.normalize();
     monster.mode = 'script';
     monster.show(aheadOf(1), player.position);
-    monster.anim('roar', { fade: 0, speed: 1.6, once: true });
+    monster.anim('idle', { fade: 0 }); // the body stays steady; only the head thrashes
     audio.play('jumpscare_sting_2', { volume: 1 });
     audio.play('jumpscare_sting_1', { volume: 0.8 });
     audio.play('monster_scream', { volume: 1 });
     ctx.clearView(true); // a sharper picture, and the camera effects toned down so the face reads clearly
     const text = { dragged: 'It saw where you hid.', breath: 'It heard you breathing.', caught: 'It caught you.' }[how] || 'It caught you.';
     const head = V(), want = V(), aim = V();
-    let t = 0, twitchT = 0, yawJerk = 0, tiltJerk = 0;
+    let t = 0, twitchT = 0, nod = 0, turn = 0, tilt = 0;
     const power = calm ? 0.35 : 1;
     deathScare = (dt) => {
       t += dt;
       // from arm's length to right in your face in a blink, then it stays there and its head shakes violently
       const d = t < 0.13 ? 1.0 - 0.58 * (t / 0.13) ** 2 : 0.42;
       want.copy(cam.position).addScaledVector(dir, d);
+      if (t < 0.2) { // the lunge carries the whole body in; after that it stays planted
+        monster.group.lookAt(cam.position.x, monster.group.position.y, cam.position.z);
+        monster.headPos(head);
+        monster.group.position.add(want.clone().sub(head)); // move the body so its face lands right there
+      }
       if (t > 0.13) {
         twitchT -= dt;
-        if (twitchT <= 0) { // new jerk every few frames: snapping side to side, not smooth wobble
-          twitchT = 0.03 + Math.random() * 0.04;
-          yawJerk = (Math.random() - 0.5) * 0.32 * power;
-          tiltJerk = (Math.random() - 0.5) * 0.22 * power;
+        if (twitchT <= 0) { // a new jerk every few frames: the head snaps side to side, not a smooth wobble
+          twitchT = 0.035 + Math.random() * 0.045;
+          turn = (Math.random() - 0.5) * 0.7 * power;
+          nod = (Math.random() - 0.5) * 0.35 * power;
+          tilt = (Math.random() - 0.5) * 0.5 * power;
         }
-        want.add(V((Math.random() - 0.5) * 0.025, (Math.random() - 0.5) * 0.02, 0).multiplyScalar(power));
+        monster.twistHead(nod, turn, tilt);
       }
-      monster.group.lookAt(cam.position.x, monster.group.position.y, cam.position.z);
-      monster.group.rotation.y += yawJerk;
-      monster.group.rotation.z = tiltJerk;
-      monster.headPos(head);
-      monster.group.position.add(want.clone().sub(head)); // move the whole body so its face lands there
       if (t < 0.2) { monster.headPos(head); aim.set(head.x, head.y + 0.06, head.z); } // follow the lunge, then hold still: it shakes, not you
       cam.lookAt(aim); // every frame, so moving the mouse can't look away
       // lit well from just in front and a little below, so every detail of the face shows
@@ -709,7 +710,6 @@ export function createStory(ctx) {
         deathScare = null;
         monster.light = null;
         monster.group.visible = false;
-        monster.group.rotation.z = 0;
         ctx.clearView(false);
         ctx.fx.red = ctx.settings.lessGore ? 0.3 : 0.8; // the red flash comes as it cuts to black
         ctx.fx.fade = 1;
@@ -783,7 +783,7 @@ export function createStory(ctx) {
     return cards;
   };
 
-  story.reset = () => { if (deathScare) ctx.clearView(false); deathScare = null; monster.light = null; monster.group.rotation.z = 0; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
+  story.reset = () => { if (deathScare) ctx.clearView(false); deathScare = null; monster.light = null; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
   return story;
 }
 

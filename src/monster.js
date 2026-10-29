@@ -111,6 +111,13 @@ export function createMonster({ A, scene, audio }) {
     return head ? head.getWorldPosition(out) : out.copy(group.position).setY(2.2);
   };
   m.light = null; // a story scene can take over its glow: { intensity, at }
+  // turn just the head (nod, shake, tilt) on top of the current animation pose; the next frame's animation resets it
+  m.twistHead = (nod, turn, tilt) => {
+    if (!head) return;
+    head.rotateX(nod);
+    head.rotateY(turn);
+    head.rotateZ(tilt);
+  };
 
   m.distanceTo = (v) => Math.hypot(group.position.x - v.x, group.position.z - v.z);
 
