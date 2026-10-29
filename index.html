@@ -6,7 +6,7 @@
   <title>ASHGROVE</title>
   <meta name="description" content="A first-person horror game in an abandoned hospital. Get out.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #000; color: #d8d2c0; font-family: 'Special Elite', monospace; user-select: none; }
     canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
@@ -35,14 +35,13 @@
     #ending .text { font-size: clamp(18px, 2.6vw, 28px); max-width: 760px; line-height: 1.8; white-space: pre-line; opacity: 0; transition: opacity 1.6s; }
     #credits .roll { position: absolute; top: 100%; width: 100%; text-align: center; line-height: 2.2; font-size: 18px; white-space: pre-line; }
     #pause .stats { color: #8a8576; margin: 6px 0 22px; font-size: 15px; }
-    #objective { position: fixed; top: 92px; left: 44px; font-size: 18px; opacity: 0; color: #cfc8b2; text-shadow: 0 0 6px #000; max-width: 60vw; }
+    #objective { position: fixed; top: 28px; left: 32px; font-size: 18px; opacity: 0; color: #cfc8b2; text-shadow: 0 0 6px #000; max-width: 60vw; }
     #objective.show { animation: objective 7s forwards; }
     #prompt { position: fixed; top: 58%; width: 100%; text-align: center; font-size: 16px; color: #e8e2cf; text-shadow: 0 0 4px #000, 0 0 2px #000; pointer-events: none; z-index: 6; }
     #message { position: fixed; bottom: 13%; width: 100%; text-align: center; font-size: clamp(16px, 2vw, 21px); opacity: 0; transition: opacity 0.6s; text-shadow: 0 0 6px #000, 0 0 2px #000; padding: 0 16px; box-sizing: border-box; pointer-events: none; z-index: 6; }
     #message .who { color: #e8b04a; }
     #message .whisper { font-style: italic; color: #b8c8d8; }
     #crosshair { display: none; position: fixed; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1px; background: rgba(230,225,210,0.5); }
-    #battery, #stamina, #breath { display: none !important; }
     #battery { position: fixed; bottom: 28px; right: 32px; width: 90px; height: 12px; border: 2px solid #aaa38e; opacity: 0; transition: opacity 0.6s; }
     #batteryFill { height: 100%; background: #c8b34a; }
     #stamina { position: fixed; bottom: 32px; left: 50%; width: 220px; height: 4px; margin-left: -110px; background: rgba(0,0,0,0.6); border: 1px solid rgba(200,195,175,0.35); opacity: 0; transition: opacity 0.8s; }
@@ -53,7 +52,7 @@
     #breath.held #breathFill { background: #d8e8ff; }
     #hold { position: fixed; top: 62%; left: 50%; width: 160px; height: 4px; margin-left: -80px; background: rgba(0,0,0,0.6); opacity: 0; }
     #holdFill { height: 100%; width: 0; background: #e8e2cf; }
-    #keycards { position: fixed; top: 78px; right: 46px; display: flex; gap: 8px; }
+    #keycards { position: fixed; top: 26px; right: 30px; display: flex; gap: 8px; }
     #keycards span { width: 22px; height: 14px; border: 1px solid #555; opacity: 0.25; }
     #keycards span.got { opacity: 1; box-shadow: 0 0 6px rgba(255,255,255,0.3); }
     #chapter { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 1.5s; z-index: 4; }
@@ -63,26 +62,6 @@
     #locker { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3;
       background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.82) 0, rgba(0,0,0,0.82) 9px, transparent 9px, transparent 30px); }
     #locker::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.9) 0, transparent 12%, transparent 88%, rgba(0,0,0,0.9) 100%); }
-    /* the camcorder you're filming on */
-    #cam { position: fixed; inset: 3.5vh 3vw; pointer-events: none; z-index: 2; display: none; font-family: 'VT323', 'Courier New', monospace; color: #f2f2ea; font-size: 26px; text-shadow: 1px 1px 0 #000, 0 0 4px rgba(0,0,0,0.8); letter-spacing: 0.04em; }
-    #cam.on { display: block; }
-    #cam .corner { position: absolute; width: 34px; height: 34px; border: 0 solid rgba(242,242,234,0.75); }
-    #cam .tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; }
-    #cam .tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; }
-    #cam .bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; }
-    #cam .br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; }
-    #cam .rec { position: absolute; top: 12px; left: 16px; }
-    #cam .rec b { color: #ff2a1a; font-weight: normal; animation: pulse 1s steps(1) infinite; }
-    #cam .tc { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); }
-    #cam .mode { position: absolute; top: 12px; right: 16px; }
-    #cam .stamp { position: absolute; bottom: 12px; left: 16px; line-height: 1; }
-    #cam .bat { position: absolute; bottom: 16px; right: 18px; width: 44px; height: 20px; border: 2px solid #f2f2ea; box-shadow: 1px 1px 0 #000; display: flex; gap: 2px; padding: 2px; box-sizing: border-box; }
-    #cam .bat::after { content: ''; position: absolute; right: -6px; top: 5px; width: 3px; height: 7px; background: #f2f2ea; }
-    #cam .bat i { flex: 1; background: #f2f2ea; }
-    #cam .bat i.off { background: transparent; }
-    #cam .bat.low { border-color: #ff3a2a; animation: pulse 0.8s steps(1) infinite; }
-    #cam .bat.low i { background: #ff3a2a; }
-    #cam .bat.low i.off { background: transparent; }
     #phone { position: fixed; inset: 5vh 8vw; pointer-events: none; display: none; z-index: 3; border: 2px solid rgba(220,255,220,0.5); font-family: 'Courier New', monospace; color: #d8ffd8; text-shadow: 0 0 3px #000; }
     #phone .rec { position: absolute; top: 10px; left: 12px; }
     #phone .rec::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #e01010; margin-right: 6px; animation: pulse 1s steps(1) infinite; }
@@ -207,12 +186,6 @@
   <div id="keycards"><span id="kcRed" style="background:#a01010"></span><span id="kcBlue" style="background:#1040b0"></span><span id="kcBlack" style="background:#151515"></span></div>
   <div id="chapter"><div class="t" id="chapterTitle"></div><div class="s" id="chapterSub"></div></div>
   <div id="locker"></div>
-  <div id="cam">
-    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
-    <div class="rec"><b>●</b> REC</div><div class="tc" id="camTc">00:00:00</div><div class="mode">SP ▶</div>
-    <div class="stamp" id="camStamp">OCT.31.1997<br>2:14 AM</div>
-    <div class="bat" id="camBat"><i></i><i></i><i></i><i></i></div>
-  </div>
   <div id="phone"><div class="rec">REC</div><div class="mode">NIGHT · 1x</div><div class="cross"></div></div>
 
   <!-- opening cutscene -->

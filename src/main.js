@@ -336,8 +336,6 @@ function simulate(dt) {
   game.floor.update(dt);
   updateDread(dt);
   autosave(dt);
-  game.save.playTime = (game.save.playTime || 0) + dt;
-  ui.camTime(game.save.playTime);
 }
 
 // ---------------------------------------------------------------- light and air
