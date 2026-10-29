@@ -673,36 +673,50 @@ export function createStory(ctx) {
     audio.play('jumpscare_sting_2', { volume: 1 });
     audio.play('jumpscare_sting_1', { volume: 0.8 });
     audio.play('monster_scream', { volume: 1 });
-    ctx.fx.red = ctx.settings.lessGore ? 0.3 : 0.8;
+    ctx.clearView(true); // sharp, clean picture: no red tint, no heavy distortion, no camera shake
+    ctx.fx.red = ctx.fx.aberration = ctx.fx.shake = 0;
     const text = { dragged: 'It saw where you hid.', breath: 'It heard you breathing.', caught: 'It caught you.' }[how] || 'It caught you.';
-    const head = V(), want = V();
-    let t = 0;
-    const jolt = () => (Math.random() - 0.5) * (calm ? 0.015 : 0.06);
+    const head = V(), want = V(), aim = V();
+    let t = 0, twitchT = 0, yawJerk = 0, tiltJerk = 0;
+    const power = calm ? 0.35 : 1;
     deathScare = (dt) => {
       t += dt;
-      // from arm's length to right in your face in a blink, then it stays there, shaking and screaming
-      const d = t < 0.13 ? 0.95 - 0.67 * (t / 0.13) ** 2 : 0.28;
+      // from arm's length to right in your face in a blink, then it stays there and its head shakes violently
+      const d = t < 0.13 ? 1.0 - 0.58 * (t / 0.13) ** 2 : 0.42;
       want.copy(cam.position).addScaledVector(dir, d);
-      if (t > 0.13) want.add(V(jolt(), jolt() * 0.7, jolt()));
+      if (t > 0.13) {
+        twitchT -= dt;
+        if (twitchT <= 0) { // new jerk every few frames: snapping side to side, not smooth wobble
+          twitchT = 0.03 + Math.random() * 0.04;
+          yawJerk = (Math.random() - 0.5) * 0.32 * power;
+          tiltJerk = (Math.random() - 0.5) * 0.22 * power;
+        }
+        want.add(V((Math.random() - 0.5) * 0.025, (Math.random() - 0.5) * 0.02, 0).multiplyScalar(power));
+      }
       monster.group.lookAt(cam.position.x, monster.group.position.y, cam.position.z);
+      monster.group.rotation.y += yawJerk;
+      monster.group.rotation.z = tiltJerk;
       monster.headPos(head);
       monster.group.position.add(want.clone().sub(head)); // move the whole body so its face lands there
-      monster.headPos(head);
-      cam.lookAt(head.x, head.y + 0.07, head.z);
-      monster.light = { intensity: 7, at: cam.position.clone().addScaledVector(dir, 0.08).setY(cam.position.y - 0.4) }; // lit from under the chin
-      ctx.fx.shake = calm ? 0.25 : 1.1;
-      ctx.fx.aberration = calm ? 0.4 : 1.2 + Math.random() * 0.8;
-      if (t > 1.3) {
+      if (t < 0.2) { monster.headPos(head); aim.set(head.x, head.y + 0.06, head.z); } // follow the lunge, then hold still: it shakes, not you
+      cam.lookAt(aim); // every frame, so moving the mouse can't look away
+      // lit well from just in front and a little below, so every detail of the face shows
+      monster.light = { intensity: 12, at: cam.position.clone().addScaledVector(dir, 0.15).setY(cam.position.y - 0.18) };
+      ctx.fx.aberration = calm ? 0 : 0.12;
+      if (t > 1.5) {
         deathScare = null;
         monster.light = null;
         monster.group.visible = false;
+        monster.group.rotation.z = 0;
+        ctx.clearView(false);
+        ctx.fx.red = ctx.settings.lessGore ? 0.3 : 0.8; // the red flash comes as it cuts to black
         ctx.fx.fade = 1;
         ctx.fx.fadeTarget = 1;
-        ctx.fx.shake = 0;
         if (!ctx.settings.lessGore) audio.play('kill_grab_gore', { volume: 1 });
         setTimeout(() => ctx.died(text), 900);
       }
     };
+  };
   };
 
   // ---------------------------------------------------------------- per frame
@@ -768,7 +782,7 @@ export function createStory(ctx) {
     return cards;
   };
 
-  story.reset = () => { deathScare = null; monster.light = null; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
+  story.reset = () => { if (deathScare) ctx.clearView(false); deathScare = null; monster.light = null; monster.group.rotation.z = 0; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
   return story;
 }
 

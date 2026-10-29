@@ -96,11 +96,12 @@ export function createEngine() {
 
   const camera = new THREE.PerspectiveCamera(70, 1, 0.05, 80);
 
+  let detail = 1; // render-resolution multiplier (the death scare doubles it so its face is clear)
   function resize() {
     renderer.setSize(innerWidth, innerHeight);
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
-    lowRes.set(Math.round(LOW_H * camera.aspect), LOW_H);
+    lowRes.set(Math.round(LOW_H * detail * camera.aspect), LOW_H * detail);
     target.setSize(lowRes.x, lowRes.y);
   }
   addEventListener('resize', resize);
@@ -110,6 +111,12 @@ export function createEngine() {
     renderer,
     camera,
     post,
+    // sharper picture for a moment: double resolution and finer vertex wobble
+    setDetail(k) {
+      detail = k;
+      snap.value.set(160 * k, 120 * k);
+      resize();
+    },
     // fx: { time, aberration, red, fade, phone }
     render(scene, cam, fx) {
       for (const k in fx) if (post.uniforms[k]) post.uniforms[k].value = fx[k];
