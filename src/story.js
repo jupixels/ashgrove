@@ -673,8 +673,7 @@ export function createStory(ctx) {
     audio.play('jumpscare_sting_2', { volume: 1 });
     audio.play('jumpscare_sting_1', { volume: 0.8 });
     audio.play('monster_scream', { volume: 1 });
-    ctx.clearView(true); // sharp, clean picture: no red tint, no heavy distortion, no camera shake
-    ctx.fx.red = ctx.fx.aberration = ctx.fx.shake = 0;
+    ctx.clearView(true); // a sharper picture, and the camera effects toned down so the face reads clearly
     const text = { dragged: 'It saw where you hid.', breath: 'It heard you breathing.', caught: 'It caught you.' }[how] || 'It caught you.';
     const head = V(), want = V(), aim = V();
     let t = 0, twitchT = 0, yawJerk = 0, tiltJerk = 0;
@@ -702,7 +701,10 @@ export function createStory(ctx) {
       cam.lookAt(aim); // every frame, so moving the mouse can't look away
       // lit well from just in front and a little below, so every detail of the face shows
       monster.light = { intensity: 12, at: cam.position.clone().addScaledVector(dir, 0.15).setY(cam.position.y - 0.18) };
-      ctx.fx.aberration = calm ? 0 : 0.12;
+      // the usual effects, just lighter: a faint red, a little distortion with the odd glitch spike, a small shake
+      ctx.fx.red = ctx.settings.lessGore ? 0.08 : 0.18 + 0.06 * Math.sin(t * 20);
+      ctx.fx.aberration = calm ? 0.05 : (Math.random() < 0.08 ? 0.9 : 0.3);
+      ctx.fx.shake = calm ? 0.08 : 0.3;
       if (t > 1.5) {
         deathScare = null;
         monster.light = null;
