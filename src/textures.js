@@ -42,6 +42,15 @@ function noise(g, w, h, r, amount) {
   g.putImageData(img, 0, 0);
 }
 
+// draw text centred at (x, y), shrinking the font until it fits maxW: nothing ever runs off a texture's edge
+function fitText(g, text, x, y, maxW, px, family = 'sans-serif', weight = 'bold') {
+  g.font = `${weight} ${px}px ${family}`;
+  const w = g.measureText(text).width;
+  if (w > maxW) g.font = `${weight} ${Math.floor(px * maxW / w)}px ${family}`;
+  g.fillText(text, x, y);
+  return Math.min(w, maxW);
+}
+
 export function ceilingTex() {
   return makeTex(64, 64, 23, (g, w, h, r) => {
     g.fillStyle = '#7d7b6e';
@@ -66,14 +75,13 @@ export function ceilingTex() {
 export function writingTex(text) {
   const t = makeTex(256, 64, 5, (g, w, h, r) => {
     g.clearRect(0, 0, w, h);
-    g.font = 'bold 34px "Special Elite", serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillStyle = 'rgba(90,0,0,0.92)';
-    g.fillText(text, w / 2, h / 2 - 4);
-    // drips
+    const tw = fitText(g, text, w / 2, h / 2 - 4, w - 24, 34, '"Special Elite", serif');
+    // drips, only under the letters
     for (let i = 0; i < 14; i++) {
-      const x = 30 + r() * 196;
+      const x = (w - tw) / 2 + 4 + r() * (tw - 8);
       g.fillRect(x, h / 2 + 4, 1 + Math.round(r()), 4 + r() * 20);
     }
   });
@@ -150,10 +158,9 @@ export function signTex(text, bg = '#1c3a1e', fg = '#e8f0d8') {
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
     g.fillStyle = fg;
-    g.font = 'bold 18px sans-serif';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(text, w / 2, h / 2 + 1);
+    fitText(g, text, w / 2, h / 2 + 1, w - 10, 18);
   });
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   return t;
@@ -172,12 +179,10 @@ export function posterTex(n) {
     g.fillStyle = color;
     g.fillRect(3, 3, w - 6, 26);
     g.fillStyle = '#e8e0cc';
-    g.font = 'bold 9px sans-serif';
     g.textAlign = 'center';
-    g.fillText(a, w / 2, 19);
+    fitText(g, a, w / 2, 19, w - 8, 9);
     g.fillStyle = '#2a2620';
-    g.font = 'bold 6px sans-serif';
-    g.fillText(b, w / 2, 40);
+    fitText(g, b, w / 2, 40, w - 6, 6);
     g.fillStyle = color;
     g.beginPath(); g.arc(w / 2, 52, 6, 0, Math.PI * 2); g.fill(); // a little icon
     for (let i = 0; i < 6; i++) blob(g, r() * w, r() * h, 4 + r() * 10, 'rgba(90,70,30,0.35)'); // water damage

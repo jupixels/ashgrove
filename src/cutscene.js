@@ -71,7 +71,7 @@ function buildExterior(psx) {
     g.font = 'bold 17px "Special Elite", serif';
     g.textAlign = 'center';
     g.fillStyle = '#b9b2a0';
-    g.fillText('ASHGR VE  MEMORIAL  HOSP TAL', w / 2, 18);
+    g.fillText('ASHGR VE  MEMORIAL  HOSP TAL', w / 2, 18, w - 6); // (maxWidth: squeezed to fit, never cut off)
     speckle(g, w, h, 120, 'rgba(90,40,10,0.7)', 2);
   });
   const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(15, 1.4), lam({ map: sign, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
@@ -147,12 +147,12 @@ function buildExterior(psx) {
     g.font = 'bold 11px sans-serif';
     g.textAlign = 'center';
     g.fillStyle = '#f0e8d8';
-    g.fillText('CONDEMNED', w / 2, 11);
+    g.fillText('CONDEMNED', w / 2, 11, w - 4);
     g.fillStyle = '#222';
     g.font = 'bold 10px sans-serif';
-    g.fillText('KEEP OUT', w / 2, 27);
+    g.fillText('KEEP OUT', w / 2, 27, w - 4);
     g.font = '6px sans-serif';
-    g.fillText('BY ORDER OF THE COUNTY', w / 2, 36);
+    g.fillText('BY ORDER OF THE COUNTY', w / 2, 36, w - 4);
     speckle(g, w, h, 60, 'rgba(90,50,20,0.6)', 2);
   });
   const condemnedSign = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.8), lam({ map: condemned, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
