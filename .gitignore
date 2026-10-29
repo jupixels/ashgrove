@@ -1,0 +1,7 @@
+# Raw downloads: licenses allow using them in the game, not redistributing the original files.
+assets/raw/
+
+# Local tooling
+.claude/
+__pycache__/
+*.blend1
