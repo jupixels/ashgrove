@@ -24,7 +24,7 @@ Six chapters across five floors and the roof:
 6. **Ward C**: free Maya (or don't), then the roof
 
 The monster patrols, follows noise (running, trays, broken glass, the breaker lever), chases you when it
-sees you, and searches when it loses you. Hide in lockers and hold your breath. Light in its face makes it flinch.
+sees you, and searches when it loses you. Hide in lockers and hold your breath. Your light won't stop it.
 Payphones save your progress. Two endings plus a secret one for finding all eight of Dr. Voss's tapes.
 
 ## Play locally
@@ -43,7 +43,7 @@ Then open http://localhost:8123. Add `?debug` for the debug hooks (`window.game`
 - `src/floors.js`: the six maps, notes, tapes and chapter list
 - `src/world.js`: builds a floor: walls, props, lights, doors, lockers, pickups, special objects, paths, line of sight
 - `src/player.js`: movement, flashlight, stamina, noise, hiding and breath, phone camera, using things
-- `src/monster.js`: the monster and its AI (patrol, investigate, chase, search, flinch)
+- `src/monster.js`: the monster and its AI (patrol, investigate, chase, search)
 - `src/story.js`: chapters, objectives, scripted scares, Maya, endings
 - `src/cutscene.js`: the found-footage opening
 - `src/ui.js`, `src/save.js`, `src/maya.js`, `src/audio.js`, `src/assets.js`, `src/textures.js`

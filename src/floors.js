@@ -218,7 +218,7 @@ export const FLOORS = {
     notes: [
       { title: 'Maintenance notice', text: 'If main power fails: reset the breaker lever in the BOILER ROOM.\n\nIt is loud. Do not do it alone.' },
       { title: 'Morgue intake', text: '10/29/97 — Dr. A. Harlan (Director).\nCause of death: [scratched out]\n\nPersonal effects: RED keycard, wedding ring.\nEffects left with the body, per Dr. Voss.' },
-      { title: 'Scrawled on a clipboard', text: 'it follows SOUND.\n\nwalk. dont run. dont knock anything over.\nhide in the lockers and HOLD YOUR BREATH (Space).\n\nit hates light in its face but dont count on it' },
+      { title: 'Scrawled on a clipboard', text: 'it follows SOUND.\n\nwalk. dont run. dont knock anything over.\nhide in the lockers and HOLD YOUR BREATH (Space).\n\nyour light wont stop it. nothing will.' },
     ],
     tapes: ['voss_tape_2', 'voss_tape_3'],
   },
