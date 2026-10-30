@@ -108,6 +108,23 @@ export function createMonster({ A, scene, audio }) {
   // where its face is (the death scare frames it)
   let head = null;
   model.traverse((o) => { if (o.isBone && /Head$/.test(o.name)) head = o; });
+
+  // footsteps in time with its feet: each foot's height above the floor; when one comes back down, that's a step
+  const feet = [];
+  model.traverse((o) => { if (o.isBone && /(Left|Right)Foot$/.test(o.name)) feet.push({ bone: o, low: Infinity, down: true }); });
+  const footPos = new THREE.Vector3();
+  function footfalls(dt, onStep) {
+    group.updateMatrixWorld(true);
+    for (const f of feet) {
+      f.bone.getWorldPosition(footPos);
+      const y = footPos.y - group.position.y;
+      f.low = Math.min(f.low + dt * 0.05, y); // the lowest it gets (drifting up slowly, so it adapts to walk and run)
+      if (!f.down && y < f.low + 0.04) { f.down = true; onStep(); }
+      else if (f.down && y > f.low + 0.1) f.down = false;
+    }
+  }
+  // how loud something it does is where you are: loud up close, fading out to `range` metres
+  const near = (d, range) => THREE.MathUtils.clamp(1 - d / range, 0, 1);
   m.headPos = (out = new THREE.Vector3()) => {
     group.updateMatrixWorld(true);
     return head ? head.getWorldPosition(out) : out.copy(group.position).setY(2.2);
@@ -130,7 +147,7 @@ export function createMonster({ A, scene, audio }) {
     m.state = 'investigate';
     m.target = pos.clone();
     m.path = [];
-    if (m.growlT <= 0) { audio.play('monster_clicking', { volume: 0.5, pos: group.position }); m.growlT = 4; }
+    if (m.growlT <= 0) { audio.play('monster_clicking', { volume: Math.max(0.25, near(m.playerDist ?? 20, 50)), pos: group.position }); m.growlT = 4; }
   };
 
   function goTo(goal, speed, dt) {
@@ -167,6 +184,7 @@ export function createMonster({ A, scene, audio }) {
     const eye = group.position.clone().setY(2.0);
     const pp = player.position.clone();
     const dist = m.distanceTo(pp);
+    m.playerDist = dist;
     const toPlayer = pp.clone().setY(0).sub(group.position.clone().setY(0)).normalize();
     const facing = new THREE.Vector3(Math.sin(group.rotation.y), 0, Math.cos(group.rotation.y));
     const inView = facing.dot(toPlayer) > 0.35 || dist < 3;
@@ -187,7 +205,7 @@ export function createMonster({ A, scene, audio }) {
     if (sees) {
       if (m.state !== 'chase') {
         anim('roar', { fade: 0.1, speed: 1.6, once: true });
-        audio.play('monster_growl_distant', { volume: 1, pos: group.position });
+        audio.play('monster_growl_distant', { volume: 1.4 * Math.max(0.35, near(dist, 50)), pos: group.position });
         if (events.spotted) events.spotted();
       }
       m.state = 'chase';
@@ -231,14 +249,12 @@ export function createMonster({ A, scene, audio }) {
     }
     anim(ANIM[m.state], { speed: m.state === 'chase' ? 1.15 : 1 });
 
-    // heavy footsteps, louder the closer it is
-    if (moveSpeed) {
-      m.stepT -= dt * moveSpeed;
-      if (m.stepT <= 0) {
-        m.stepT = 1.4;
-        const v = THREE.MathUtils.clamp(1 - dist / 22, 0, 1);
-        if (v > 0.03) audio.play(Math.random() < 0.25 ? 'monster_drag_tubes' : 'monster_footstep_heavy', { volume: v, pos: group.position });
-      }
+    // heavy footsteps, each one as a foot comes down: loud close by, heard a long way off
+    if (moveSpeed && dist < 45) {
+      footfalls(dt, () => {
+        const v = 1.8 * near(dist, 45) ** 1.2;
+        if (v > 0.03) audio.play(Math.random() < 0.2 ? 'monster_drag_tubes' : 'monster_footstep_heavy', { volume: v, pos: group.position });
+      });
     }
 
     // caught in the open
