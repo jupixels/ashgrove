@@ -567,7 +567,7 @@ export function createStory(ctx) {
         const speed = d > 6 ? 4.4 : 2.6;
         g.addScaledVector(dir, Math.min(step, speed * dt));
         maya.group.rotation.y = Math.atan2(dir.x, dir.z);
-        maya.play('walk', speed / 2.4);
+        maya.play('run', THREE.MathUtils.clamp(speed / 3.2, 0.85, 1.35)); // her injured run, keeping up with you
         const door = mayaPath.length ? f.doorAt(...mayaPath[0]) : null;
         if (door && !door.open) door.openNow(false);
       }

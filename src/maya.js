@@ -1,4 +1,4 @@
-// Maya: the Mixamo girl (Ch02) with walking, breathing-idle and scared-idle animations (tools/convert_mixamo.py).
+// Maya: the Mixamo girl (Ch02) with walking, breathing-idle, scared-idle and injured-run animations (tools/convert_mixamo.py).
 // One rig for the whole game: the opening cutscene and the Ward C rescue both use it.
 import * as THREE from 'three';
 import { psx } from './engine.js';
