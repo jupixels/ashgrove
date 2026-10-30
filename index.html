@@ -14,6 +14,42 @@
     button { font-family: inherit; }
     .screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(0,0,0,0.92); z-index: 10; padding: 16px; box-sizing: border-box; }
     .screen.on { display: flex; }
+    #title { background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0.25) 0, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.9) 100%); }
+    /* VHS glitch between menus: the picture tears, slips and colour-splits for a moment */
+    #vhs { position: fixed; inset: 0; z-index: 30; pointer-events: none; display: none; mix-blend-mode: screen;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 1px, transparent 1px, transparent 3px); }
+    #vhs.on { display: block; animation: vhsroll 0.45s steps(6) 1; }
+    #vhs i { position: absolute; left: 0; right: 0; background: rgba(220,230,255,0.25); filter: blur(1px); }
+    body.glitching .screen.on > * { animation: vhstear 0.45s steps(5) 1; }
+    @keyframes vhsroll { 0% { transform: translateY(-6%); opacity: 1; } 100% { transform: translateY(4%); opacity: 0; } }
+    @keyframes vhstear {
+      0% { transform: translateX(-14px) skewX(-6deg); filter: hue-rotate(80deg) contrast(1.6); text-shadow: 4px 0 #f00, -4px 0 #0ff; }
+      30% { transform: translateX(10px); filter: none; }
+      55% { transform: translateX(-5px) skewX(3deg); text-shadow: -3px 0 #f00, 3px 0 #0ff; }
+      100% { transform: none; filter: none; }
+    }
+    #tip { margin-top: 18px; font-size: 15px; color: #8a846f; max-width: 520px; min-height: 1.6em; transition: opacity 0.6s; }
+    /* the journal */
+    #journal .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
+    #journal .tabs button { background: none; border: 1px solid #333; color: #8a846f; font-family: inherit; font-size: 16px; padding: 6px 14px; cursor: pointer; letter-spacing: 0.1em; }
+    #journal .tabs button.on { border-color: #8a1a1a; color: #f0e8d0; }
+    #journal .page { width: min(640px, 92vw); height: min(440px, 62vh); overflow-y: auto; text-align: left; border: 1px solid #2a2a26; padding: 16px 20px; box-sizing: border-box; background: rgba(10,10,9,0.9); }
+    #journal .page .item { padding: 8px 6px; border-bottom: 1px solid #222; cursor: pointer; }
+    #journal .page .item:hover { color: #fff; background: rgba(138,26,26,0.15); }
+    #journal .page .item small { color: #6a665a; margin-left: 8px; }
+    #journal .page .empty { color: #555; text-align: center; margin-top: 30px; }
+    #journal canvas { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+    #journal .floors { display: flex; gap: 6px; margin-bottom: 8px; }
+    #journal .floors button { background: none; border: 1px solid #333; color: #8a846f; font-family: inherit; cursor: pointer; padding: 2px 8px; }
+    #journal .floors button.on { color: #f0e8d0; border-color: #8a846f; }
+    /* subtitles size */
+    body.subs-small #message { font-size: clamp(13px, 1.5vw, 16px); }
+    body.subs-large #message { font-size: clamp(20px, 2.8vw, 30px); }
+    #settings select { font-family: inherit; background: #111; color: #cfc8b2; border: 1px solid #333; padding: 3px 6px; }
+    #settings { overflow-y: auto; justify-content: flex-start; padding-top: 4vh; }
+    #keys { display: grid; grid-template-columns: 1fr auto; gap: 4px 18px; width: min(420px, 90vw); margin: 6px 0 12px; font-size: 15px; }
+    #keys button { font-family: inherit; background: #111; color: #f0e8d0; border: 1px solid #333; min-width: 110px; padding: 2px 8px; cursor: pointer; }
+    #keys button.wait { border-color: #8a1a1a; color: #ff9a8a; }
     .big { font-size: clamp(48px, 12vw, 130px); letter-spacing: 0.25em; margin: 0 0 0 0.25em; color: #e6e0cc; text-shadow: 3px 0 #600, -3px 0 #022; animation: jitter 4s infinite; }
     .sub { letter-spacing: 0.4em; color: #8a1a1a; margin-bottom: 40px; }
     .menu { display: flex; flex-direction: column; gap: 10px; min-width: 240px; }
@@ -124,22 +160,23 @@
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-      "./src/assets.js": "./src/assets.js?v=8ca583ee05",
-      "./src/audio.js": "./src/audio.js?v=8ca583ee05",
-      "./src/cutscene.js": "./src/cutscene.js?v=8ca583ee05",
-      "./src/engine.js": "./src/engine.js?v=8ca583ee05",
-      "./src/floors.js": "./src/floors.js?v=8ca583ee05",
-      "./src/main.js": "./src/main.js?v=8ca583ee05",
-      "./src/maya.js": "./src/maya.js?v=8ca583ee05",
-      "./src/moments.js": "./src/moments.js?v=8ca583ee05",
-      "./src/monster.js": "./src/monster.js?v=8ca583ee05",
-      "./src/player.js": "./src/player.js?v=8ca583ee05",
-      "./src/prologue.js": "./src/prologue.js?v=8ca583ee05",
-      "./src/save.js": "./src/save.js?v=8ca583ee05",
-      "./src/story.js": "./src/story.js?v=8ca583ee05",
-      "./src/textures.js": "./src/textures.js?v=8ca583ee05",
-      "./src/ui.js": "./src/ui.js?v=8ca583ee05",
-      "./src/world.js": "./src/world.js?v=8ca583ee05"
+      "./src/assets.js": "./src/assets.js?v=1e59495c32",
+      "./src/audio.js": "./src/audio.js?v=1e59495c32",
+      "./src/cutscene.js": "./src/cutscene.js?v=1e59495c32",
+      "./src/engine.js": "./src/engine.js?v=1e59495c32",
+      "./src/floors.js": "./src/floors.js?v=1e59495c32",
+      "./src/journal.js": "./src/journal.js?v=1e59495c32",
+      "./src/main.js": "./src/main.js?v=1e59495c32",
+      "./src/maya.js": "./src/maya.js?v=1e59495c32",
+      "./src/moments.js": "./src/moments.js?v=1e59495c32",
+      "./src/monster.js": "./src/monster.js?v=1e59495c32",
+      "./src/player.js": "./src/player.js?v=1e59495c32",
+      "./src/prologue.js": "./src/prologue.js?v=1e59495c32",
+      "./src/save.js": "./src/save.js?v=1e59495c32",
+      "./src/story.js": "./src/story.js?v=1e59495c32",
+      "./src/textures.js": "./src/textures.js?v=1e59495c32",
+      "./src/ui.js": "./src/ui.js?v=1e59495c32",
+      "./src/world.js": "./src/world.js?v=1e59495c32"
     }
   }
   </script>
@@ -150,6 +187,7 @@
     <h1 class="big">ASHGROVE</h1>
     <div class="sub">MEMORIAL HOSPITAL</div>
     <div class="start" id="loading">loading...</div>
+    <div id="tip"></div>
     <div class="menu" id="mainMenu" style="display:none">
       <button id="btnContinue">Continue</button>
       <button id="btnNew">New Game</button>
@@ -182,9 +220,22 @@
     <label>Volume <input type="range" id="setVol" min="0" max="1" step="0.05"></label>
     <label>Difficulty (new games) <select id="setDiff"><option value="easy">Easy</option><option value="normal">Normal</option><option value="nightmare">Nightmare</option></select></label>
     <div id="diffNote" class="small" style="max-width:420px;margin:-4px auto 10px;opacity:0.75"></div>
+    <label>Field of view <input type="range" id="setFov" min="60" max="100" step="1"></label>
+    <label>Motion blur <input type="checkbox" id="setBlur"></label>
+    <label>Subtitle size <select id="setSubs"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
     <label>Less gore <input type="checkbox" id="setGore"></label>
     <label>Reduce flashing lights <input type="checkbox" id="setFlash"></label>
-    <div class="menu" style="margin-top:20px"><button id="btnSettingsBack">Back</button></div>
+    <h3 style="letter-spacing:0.2em;font-weight:normal;margin:18px 0 4px">KEYS</h3>
+    <div class="small" style="margin:0 0 6px">Click a key, then press the new one.</div>
+    <div id="keys"></div>
+    <div class="menu" style="margin-top:8px"><button id="btnKeysReset">Reset keys</button><button id="btnSettingsBack">Back</button></div>
+  </div>
+
+  <div id="journal" class="screen">
+    <h2 style="letter-spacing:0.3em;margin:0 0 12px">JOURNAL</h2>
+    <div class="tabs"><button data-tab="items">Items</button><button data-tab="notes">Notes</button><button data-tab="tapes">Tapes</button><button data-tab="map">Map</button></div>
+    <div class="page" id="journalPage"></div>
+    <div class="small" style="margin-top:12px">J or Esc to close</div>
   </div>
 
   <div id="note" class="screen">
@@ -219,6 +270,7 @@
   <div id="objective"></div>
   <div id="prompt"></div>
   <div id="message"></div>
+  <div id="vhs"><i style="top:22%;height:7px"></i><i style="top:61%;height:3px"></i><i style="top:78%;height:12px"></i></div>
   <div id="bedview"></div>
   <div id="carry"></div>
   <div id="controlsTip">Press <b>Tab</b> for controls</div>
@@ -235,6 +287,7 @@
       <tr><td>G / Left-click</td><td>Throw a bottle or brick (it draws the monster to the noise)</td></tr>
       <tr><td>Space</td><td>Hold your breath (while hiding)</td></tr>
       <tr><td>R / Right-click</td><td>Phone camera</td></tr>
+      <tr><td>J</td><td>Journal: items, notes, tapes, map</td></tr>
       <tr><td>Esc</td><td>Pause</td></tr>
     </table>
   </div>
@@ -265,6 +318,6 @@
     <div id="skip">hold SPACE to skip</div>
   </div>
 
-  <script type="module" src="src/main.js?v=8ca583ee05"></script>
+  <script type="module" src="src/main.js?v=1e59495c32"></script>
 </body>
 </html>

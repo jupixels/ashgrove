@@ -10,7 +10,7 @@ Built with [Three.js](https://threejs.org); runs in the browser from GitHub Page
 ## Controls
 
 WASD move · Mouse look · Shift run · C crouch · F flashlight · E use / hide in lockers ·
-Space hold your breath (while hidden) · Right-click or Q phone camera · Esc pause
+Space hold your breath (while hidden) · Q/E lean · G or left-click throw · R or right-click phone camera · J journal · Tab controls · Esc pause
 
 ## The game
 

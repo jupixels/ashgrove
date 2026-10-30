@@ -167,7 +167,11 @@ export function createStory(ctx) {
     else if (kind === 'note') {
       audio.play('pickup_paper', { volume: 0.8 });
       const n = f.def.notes[data.n];
-      if (n) ctx.overlay((close) => ui.note(n.title, n.text, close));
+      if (n) {
+        S().notesRead = S().notesRead || [];
+        if (!S().notesRead.some((r) => r.title === n.title)) S().notesRead.push({ title: n.title, text: n.text });
+        ctx.overlay((close) => ui.note(n.title, n.text, close));
+      }
     } else if (kind === 'tape') {
       const name = f.def.tapes[data.n];
       if (!name) return;

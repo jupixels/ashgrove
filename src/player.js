@@ -85,6 +85,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     looked: null,
     keys: {},
     keymap: { ...DEFAULT_KEYS },
+    fov: 70,                // field of view (Settings)
     lean: 0, leanOff: new THREE.Vector3(), leanBlocked: {}, // leaning round corners
     carry: [],              // bottles and bricks you're carrying (max 3), last picked up is thrown first
   };
@@ -159,7 +160,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     p.phoneUp = up;
     if (up) { camera.layers.enable(PHONE_LAYER); audio.play('phone_camera_raise', { volume: 0.6 }); }
     else camera.layers.disable(PHONE_LAYER);
-    camera.fov = up ? 58 : 70;
+    camera.fov = up ? 58 : p.fov;
     camera.updateProjectionMatrix();
     ui.phone(up);
     if (p.onPhone) p.onPhone(up);

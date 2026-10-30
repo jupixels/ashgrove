@@ -5,7 +5,7 @@ import { createEngine, psx } from './engine.js';
 import { GameAudio } from './audio.js';
 import { loadAssets } from './assets.js';
 import { createIntro } from './cutscene.js';
-import { FLOORS, TAPE_COUNT, CHAPTERS } from './floors.js';
+import { FLOORS, TAPE_COUNT, TAPE_LINES, CHAPTERS } from './floors.js';
 import { buildFloor } from './world.js';
 import { createPlayer } from './player.js';
 import { createMonster } from './monster.js';
@@ -14,6 +14,8 @@ import { createUI } from './ui.js';
 import { setupMaya } from './maya.js';
 import * as SAVE from './save.js';
 import { createPrologue, PROLOGUE_START } from './prologue.js';
+import { buildExterior } from './cutscene.js';
+import { openJournal } from './journal.js';
 
 const DEBUG = location.search.includes('debug');
 const ui = createUI();
@@ -55,6 +57,12 @@ function applySettings() {
   controls.pointerSpeed = 0.8 * settings.sensitivity;
   if (audio.master) audio.master.gain.value = settings.volume;
   engine.post.uniforms.grain.value = 0.09;
+  player.fov = settings.fov || 70;
+  if (!player.phoneUp) { camera.fov = player.fov; camera.updateProjectionMatrix(); }
+  engine.setMotionBlur(!!settings.motionBlur);
+  document.body.classList.toggle('subs-small', settings.subtitles === 'small');
+  document.body.classList.toggle('subs-large', settings.subtitles === 'large');
+  player.setKeymap(settings.keys);
 }
 applySettings();
 
@@ -144,7 +152,7 @@ const ctx = {
   clearView(on) {
     engine.setDetail(on ? 2 : 1);
     engine.post.uniforms.grain.value = on ? 0.06 : 0.09;
-    camera.fov = on ? 56 : 70; // zoomed in: its face fills the view, not its body
+    camera.fov = on ? 56 : player.fov; // zoomed in: its face fills the view, not its body
     camera.updateProjectionMatrix();
   },
   get save() { return game.save; },
@@ -176,7 +184,7 @@ function died(text) {
   if (disk) { disk.deaths = (disk.deaths || 0) + 1; disk.resume = null; SAVE.writeSave(disk); }
   ui.hud(false);
   controls.unlock();
-  ui.death(text, retry, toMenu);
+  ui.death(text, retry, toMenu, nightmare());
 }
 
 function retry() {
@@ -359,7 +367,8 @@ addEventListener('keydown', (e) => {
   }
   if ((game.state !== 'playing' && game.state !== 'prologue') || game.overlay || !(controls.isLocked || DEBUG)) return;
   if (e.code === 'Space') e.preventDefault();
-  if (e.repeat) return; // a held key repeats: that's not a new press (it was restarting hold-to-use and toggling the light)
+  if (e.repeat) return;
+  if (e.code === player.keymap.journal && game.state === 'playing') { showJournal(); return; } // a held key repeats: that's not a new press (it was restarting hold-to-use and toggling the light)
   player.keyDown(e.code);
 });
 addEventListener('keyup', (e) => { if (e.code === 'Tab') ui.controls(false); player.keyUp(e.code); });
@@ -395,7 +404,35 @@ const monsterEvents = {
   spotted: () => {},
 };
 
+// the journal map: remember the cells round you that you can actually see
+let seenT = 0;
+function markSeen(dt) {
+  seenT -= dt;
+  if (seenT > 0 || !game.floor) return;
+  seenT = 0.25;
+  const f = game.floor, key = f.key, seen = (game.save.seen ||= {});
+  const set = new Set(seen[key] || []);
+  const [px, pz] = f.cellOf(camera.position);
+  for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) {
+    const x = px + dx, z = pz + dz;
+    if (!f.walkable(x, z) || set.has(`${x},${z}`)) continue;
+    if (Math.abs(dx) + Math.abs(dz) <= 1 || f.los(camera.position, f.cellCenter(x, z).setY(camera.position.y))) set.add(`${x},${z}`);
+  }
+  seen[key] = [...set];
+}
+
+function showJournal() {
+  const s = game.save;
+  const maps = {};
+  for (const [k, cells] of Object.entries(s.seen || {})) if (FLOORS[k] && !FLOORS[k].outdoor) maps[k] = { def: FLOORS[k], seen: new Set(cells) };
+  ctx.overlay((close) => openJournal({
+    flags: s.flags, carry: player.carry, notes: s.notesRead || [], tapes: s.tapes, tapeLines: TAPE_LINES, maps,
+    floor: game.floor.key, here: { x: camera.position.x, z: camera.position.z, yaw: camera.rotation.y },
+  }, { onTape: (name) => audio.play(name, { volume: 1 }), onClose: close }));
+}
+
 function simulate(dt) {
+  markSeen(dt);
   player.update(dt);
   monster.update(dt, player, monsterEvents);
   story.update(dt);
@@ -468,10 +505,30 @@ function render(dt, t) {
   cam.position.y -= oy;
 }
 
+const menuView = buildExterior(psx);
+const menuCam = new THREE.PerspectiveCamera(58, 1, 0.1, 150);
+function updateMenuView(dt, t) {
+  if (game.state === 'menu') {
+    view.scene = menuView.scene;
+    view.camera = menuCam;
+    menuCam.aspect = camera.aspect;
+    menuCam.updateProjectionMatrix();
+    // a slow, drifting look up at the building from beyond the fence, like someone standing in the rain
+    menuCam.position.set(Math.sin(t * 0.04) * 5, 1.7 + Math.sin(t * 0.11) * 0.15, -4 + Math.cos(t * 0.05) * 2);
+    menuCam.lookAt(Math.sin(t * 0.03) * 3, 7.5, -30);
+    menuView.update(dt, menuCam);
+  } else if (view.scene === menuView.scene) {
+    view.scene = scene;
+    view.camera = camera;
+  }
+}
+ui.onGlitch = () => { fx.aberration = Math.max(fx.aberration, 1.2); };
+
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
+  updateMenuView(dt, t);
   if (intro && intro.active) {
     if (!intro.frozen) intro.update(dt);
     monster.update(dt, null, monsterEvents);

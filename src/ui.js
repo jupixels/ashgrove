@@ -1,5 +1,28 @@
 // Everything on screen that isn't the 3D world: HUD, subtitles, menus, notes, keypad, death and ending screens.
+import { DEFAULT_KEYS } from './player.js';
 const $ = (id) => document.getElementById(id);
+
+// tips for the loading screen and the death screen
+const TIPS = [
+  'It hunts by sound. Walking is quieter than running, and crouching is quieter still.',
+  'Hold your breath (Space) when it comes close to where you are hiding. Not for too long.',
+  'If it watches you climb into a locker, it knows where you are.',
+  'Throw a bottle or a brick (G or left-click) to send it somewhere else.',
+  'Lean round corners with Q and E before you step out.',
+  'Broken glass crunches. Trays clatter. Watch where you step.',
+  'Payphones save your progress. Something is always breathing on the line.',
+  'Your phone camera (R) sees things your eyes do not.',
+  'There are eight of Dr. Voss\'s tapes. Find them all.',
+  'Under a bed, you can see its feet coming. It can see your light.',
+  'Your journal (J) has a map of everywhere you have been.',
+];
+export const randomTip = () => TIPS[Math.floor(Math.random() * TIPS.length)];
+const KEY_LABELS = {
+  forward: 'Move forward', back: 'Move back', left: 'Move left', right: 'Move right', run: 'Run', crouch: 'Crouch',
+  leanLeft: 'Lean left', leanRight: 'Lean right', use: 'Use / hide', flashlight: 'Flashlight', phone: 'Phone camera',
+  throw: 'Throw', breath: 'Hold breath', journal: 'Journal', controls: 'Controls',
+};
+export const keyName = (code) => (code || '?').replace(/^Key/, '').replace(/^Digit/, '').replace(/Left$|Right$/, '').replace('Arrow', '↑→↓←'.includes(code) ? '' : 'Arrow ');
 
 export function createUI() {
   const el = {
@@ -16,7 +39,11 @@ export function createUI() {
     chapter: $('chapter'), chapterTitle: $('chapterTitle'), chapterSub: $('chapterSub'),
     locker: $('locker'), phone: $('phone'),
   };
-  const show = (e, on) => e.classList.toggle('on', on);
+  // showing or hiding a menu screen tears the picture like a VHS tape for a moment
+  const show = (e, on) => {
+    if (e.classList.contains('screen') && e.classList.contains('on') !== on) ui.glitch();
+    e.classList.toggle('on', on);
+  };
   let msgTimer = 0, lastPrompt = null;
 
   const ui = {
@@ -82,7 +109,22 @@ export function createUI() {
     },
 
     // ---------------------------------------------------------------- screens
-    loading(p) { el.loading.textContent = p >= 1 ? '' : `loading ${Math.round(p * 100)}%`; },
+    loading(p) {
+      el.loading.textContent = p >= 1 ? '' : `loading ${Math.round(p * 100)}%`;
+      const tip = $('tip');
+      if (p < 1 && !ui._tipTimer) {
+        tip.textContent = randomTip();
+        ui._tipTimer = setInterval(() => { tip.style.opacity = 0; setTimeout(() => { tip.textContent = randomTip(); tip.style.opacity = 1; }, 600); }, 4500);
+      }
+      if (p >= 1) { clearInterval(ui._tipTimer); tip.textContent = ''; }
+    },
+    glitch() {
+      document.body.classList.add('glitching');
+      $('vhs').classList.add('on');
+      clearTimeout(ui._glitchT);
+      ui._glitchT = setTimeout(() => { document.body.classList.remove('glitching'); $('vhs').classList.remove('on'); }, 460);
+      if (ui.onGlitch) ui.onGlitch();
+    },
     mainMenu({ canContinue, onNew, onContinue, onSettings, onCredits }) {
       show(el.title, true);
       el.loading.style.display = 'none';
@@ -105,6 +147,11 @@ export function createUI() {
     settingsMenu(settings, onChange, onBack) {
       show(el.settings, true);
       const sens = $('setSens'), vol = $('setVol'), gore = $('setGore'), flash = $('setFlash'), diff = $('setDiff');
+      const fov = $('setFov'), blur = $('setBlur'), subs = $('setSubs');
+      fov.value = settings.fov || 70;
+      blur.checked = !!settings.motionBlur;
+      subs.value = settings.subtitles || 'medium';
+      let keys = { ...DEFAULT_KEYS, ...(settings.keys || {}) };
       const DIFF_NOTE = {
         easy: 'A slower monster that hears and sees less.',
         normal: 'The way it was meant to be played.',
@@ -118,9 +165,38 @@ export function createUI() {
       flash.checked = settings.reduceFlashing;
       const changed = () => {
         $('diffNote').textContent = DIFF_NOTE[diff.value];
-        onChange({ sensitivity: +sens.value, volume: +vol.value, lessGore: gore.checked, reduceFlashing: flash.checked, difficulty: diff.value });
+        onChange({
+          sensitivity: +sens.value, volume: +vol.value, lessGore: gore.checked, reduceFlashing: flash.checked, difficulty: diff.value,
+          fov: +fov.value, motionBlur: blur.checked, subtitles: subs.value, keys,
+        });
       };
-      sens.oninput = vol.oninput = gore.onchange = flash.onchange = diff.onchange = changed;
+      sens.oninput = vol.oninput = gore.onchange = flash.onchange = diff.onchange = fov.oninput = blur.onchange = subs.onchange = changed;
+      // key rebinding: click an action, press the new key (Esc cancels)
+      const drawKeys = () => {
+        const box = $('keys');
+        box.innerHTML = '';
+        for (const action of Object.keys(KEY_LABELS)) {
+          const label = document.createElement('span');
+          label.textContent = KEY_LABELS[action];
+          const b = document.createElement('button');
+          b.textContent = keyName(keys[action]);
+          b.onclick = () => {
+            b.textContent = 'press a key...';
+            b.classList.add('wait');
+            const grab = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              removeEventListener('keydown', grab, true);
+              if (e.code !== 'Escape') { keys = { ...keys, [action]: e.code }; changed(); }
+              drawKeys();
+            };
+            addEventListener('keydown', grab, true);
+          };
+          box.append(label, b);
+        }
+      };
+      drawKeys();
+      $('btnKeysReset').onclick = () => { keys = { ...DEFAULT_KEYS }; changed(); drawKeys(); };
       $('btnSettingsBack').onclick = () => { show(el.settings, false); onBack(); };
     },
     note(title, text, onClose) {
@@ -169,8 +245,10 @@ export function createUI() {
       show(el.keypad, true);
       addEventListener('keydown', key);
     },
-    death(text, onRetry, onMenu) {
-      el.deathText.textContent = text;
+    death(text, onRetry, onMenu, nightmare) {
+      el.deathText.textContent = `${text}\n\nTip: ${randomTip()}`;
+      el.deathText.style.whiteSpace = 'pre-line';
+      $('btnRetry').textContent = nightmare ? 'Wake up where this floor began' : 'Wake up at the last checkpoint';
       show(el.death, true);
       $('btnRetry').onclick = () => { show(el.death, false); onRetry(); };
       $('btnDeathMenu').onclick = () => { show(el.death, false); onMenu(); };

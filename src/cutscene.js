@@ -23,7 +23,7 @@ function speckle(g, w, h, n, color, size) {
 }
 
 // ---------------------------------------------------------------- exterior
-function buildExterior(psx) {
+export function buildExterior(psx) {
   const s = new THREE.Scene();
   s.background = new THREE.Color(0x07090c);
   s.fog = new THREE.FogExp2(0x07090c, 0.022);

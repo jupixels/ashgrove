@@ -36,6 +36,9 @@ export function createEngine() {
 
   const lowRes = new THREE.Vector2();
   const target = new THREE.WebGLRenderTarget(1, 1, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+  const lastFrame = target.clone(); // motion blur: the frame before this one
+  const targets = [target, lastFrame];
+  let cur = 0;
   const post = new THREE.ShaderMaterial({
     uniforms: {
       tDiffuse: { value: target.texture },
@@ -46,12 +49,14 @@ export function createEngine() {
       red: { value: 0 },
       fade: { value: 0 },
       phone: { value: 0 },
+      tPrev: { value: lastFrame.texture },
+      blur: { value: 0 },    // motion blur: how much of the last frame lingers
       tired: { value: 0 },   // out of breath from running
       air: { value: 0 },     // holding your breath: 1 = about to gasp
     },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: `
-      uniform sampler2D tDiffuse; uniform vec2 res; uniform float time, aberration, grain, red, fade, phone, tired, air;
+      uniform sampler2D tDiffuse, tPrev; uniform vec2 res; uniform float time, aberration, grain, red, fade, phone, tired, air, blur;
       varying vec2 vUv;
       float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       float bayer(vec2 p){ p = mod(floor(p), 4.0);
@@ -66,6 +71,7 @@ export function createEngine() {
         uv.x += jitter;
         float ab = 0.0015 + aberration * 0.015;
         vec3 col = vec3(texture2D(tDiffuse, uv + vec2(ab, 0.)).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - vec2(ab, 0.)).b);
+        col = mix(col, texture2D(tPrev, uv).rgb, blur);
         // winded: vision swims (a doubled image drifting with each gasp)
         float gasp = 0.5 + 0.5 * sin(time * 7.0);
         col = mix(col, texture2D(tDiffuse, uv + vec2(0.006, 0.002) * tired * gasp).rgb, 0.4 * tired);
@@ -103,6 +109,7 @@ export function createEngine() {
     camera.updateProjectionMatrix();
     lowRes.set(Math.round(LOW_H * detail * camera.aspect), LOW_H * detail);
     target.setSize(lowRes.x, lowRes.y);
+    lastFrame.setSize(lowRes.x, lowRes.y);
   }
   addEventListener('resize', resize);
   resize();
@@ -112,6 +119,7 @@ export function createEngine() {
     camera,
     post,
     // sharper picture for a moment: double resolution and finer vertex wobble
+    setMotionBlur(on) { post.uniforms.blur.value = on ? 0.42 : 0; },
     setDetail(k) {
       detail = k;
       snap.value.set(160 * k, 120 * k);
@@ -120,10 +128,13 @@ export function createEngine() {
     // fx: { time, aberration, red, fade, phone }
     render(scene, cam, fx) {
       for (const k in fx) if (post.uniforms[k]) post.uniforms[k].value = fx[k];
-      renderer.setRenderTarget(target);
+      renderer.setRenderTarget(targets[cur]);
       renderer.render(scene, cam);
+      post.uniforms.tDiffuse.value = targets[cur].texture;
+      post.uniforms.tPrev.value = targets[1 - cur].texture;
       renderer.setRenderTarget(null);
       renderer.render(postScene, postCam);
+      cur = 1 - cur;
     },
   };
 }
