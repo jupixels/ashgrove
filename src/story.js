@@ -136,7 +136,7 @@ export function createStory(ctx) {
       chapter(6);
       if (!F().mayaFreed) {
         placeMayaOnTable();
-        loop('stitching_sound', f.objects.mayaTable.pos.clone().setY(1), 14, 0.9);
+        loop('stitching_sound', f.objects.mayaTable.pos.clone().setY(1), 45, 1.5); // loud enough to follow from the stairs
         scene(async (w) => { await w(2.5); ui.message('From the operating theatre: metal on metal. Then something that might be a muffled voice.', 4500); });
         objective('Follow the sound. The operating theatre.');
       } else {
@@ -764,6 +764,16 @@ export function createStory(ctx) {
     if (f.key === 'F3' && !F().icu && inCells(5, 19, 7, 12)) { F().icu = true; icuBeats = 0; ui.message('The heart monitors are beeping. In time with your footsteps.', 3000); }
     if (f.key === 'F4') {
       updateCeiling();
+      // until you free her: a metal clatter from the theatre every so often, something sharp to follow
+      if (!F().mayaFreed) {
+        story.clankT = (story.clankT ?? 6) - dt;
+        if (story.clankT <= 0) {
+          story.clankT = 9 + Math.random() * 6;
+          const at = f.objects.mayaTable.pos.clone().setY(1);
+          const d = player.position.distanceTo(at);
+          audio.play('knock_over_tray', { volume: 1.2 * Math.max(0.3, 1 - d / 50), pos: at });
+        }
+      }
       if (!F().mayaFreed && !F().mayaCalled && player.position.distanceTo(f.objects.mayaTable.pos.clone().setY(1.6)) < 9) {
         F().mayaCalled = true;
         voice('maya_table', 'Maya', "Sam?! Sam, get me off this thing! Cut the straps, hurry, it's coming back!", 5);
