@@ -3,7 +3,7 @@
 //  1. Admitted          1F    the lockdown console is dead: power runs through the basement
 //  2. Cold Storage      B1    pull the breaker, take the RED keycard off Dr. Harlan. Drawer 13.
 //  3. Lullaby           2F    the music box; the BLUE keycard; what the phone camera sees in the corner
-//  4. One Heartbeat     3F    the ICU monitors; Voss's office (code 1031); the BLACK keycard; the elevator
+//  4. One Heartbeat     3F    the ICU monitors; Voss's office (a new code each game); the BLACK keycard; the elevator
 //  5. Leaving So Soon   1F    lift the lockdown; the door is welded; "Maya" in the restroom; run upstairs
 //  6. Ward C            4F    free Maya (or don't), the ceiling, the roof, the fire escape
 import * as THREE from 'three';
@@ -78,6 +78,9 @@ export function createStory(ctx) {
     F()[`card${n}`] = true;
     ui.chapter(CHAPTERS[n].title, FLOORS[CHAPTERS[n].floor].name.toUpperCase());
   }
+  // Dr. Voss's door code: four random digits, new every game
+  const doorCode = () => (F().doorCode ||= String(Math.floor(Math.random() * 10000)).padStart(4, '0'));
+  story.doorCode = doorCode;
   const keycardCount = () => ['red', 'blue', 'black'].filter((k) => F()[k]).length;
 
   // ---------------------------------------------------------------- arriving on a floor
@@ -199,7 +202,7 @@ export function createStory(ctx) {
     if (kind === 'door') { data.openNow(); return; }
     if (kind === 'keypad') {
       ctx.overlay((close) => ui.keypad(data.label || 'Keypad', (code) => {
-        if (code === data.code) { audio.play('keycard_beep', { volume: 0.7 }); data.locked = false; data.openNow(); return true; }
+        if (code === doorCode()) { audio.play('keycard_beep', { volume: 0.7 }); data.locked = false; data.openNow(); return true; }
         audio.play('keycard_denied', { volume: 0.7 });
         return false;
       }, close));

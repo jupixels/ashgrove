@@ -193,19 +193,18 @@ export function createMoments(ctx) {
   }
 
   // ---------------------------------------------------------------- Dr. Voss's door code, in ink only the camera sees
-  // big and glowing through the phone, invisible to the eye; on a different wall each game
-  const CODE_SPOTS = [
-    [21, 3, 'south'], [11, 6, 'north'], [29, 3, 'south'], [20, 9, 'west'], [21, 8, 'east'], [37, 9, 'west'],
-  ];
+  // big and glowing through the phone, invisible to the eye. A new code every game, on a wall inside one of the rooms
+  // (never the corridors): operating room 1, operating room 2, the ICU, storage, records.
+  const CODE_SPOTS = [[6, 0, 'south'], [15, 0, 'south'], [20, 9, 'west'], [21, 8, 'east'], [37, 9, 'west']];
   function doorCode() {
     const f = ctx.floor;
-    if (F().codeSpot === undefined) F().codeSpot = Math.floor(Math.random() * CODE_SPOTS.length);
-    const [x, z, face] = CODE_SPOTS[F().codeSpot % CODE_SPOTS.length];
+    if (F().codeSpot === undefined || F().codeSpot >= CODE_SPOTS.length) F().codeSpot = Math.floor(Math.random() * CODE_SPOTS.length);
+    const [x, z, face] = CODE_SPOTS[F().codeSpot];
     const c = cellPos(x, z).setY(1.55);
     const at = { south: [c.clone().setZ((z + 1) * 2 + 0.05), 0], north: [c.clone().setZ(z * 2 - 0.05), Math.PI],
       east: [c.clone().setX((x + 1) * 2 + 0.05), Math.PI / 2], west: [c.clone().setX(x * 2 - 0.05), -Math.PI / 2] }[face];
     const ink = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.6), new THREE.MeshBasicMaterial({
-      map: T.writingTex('1 0 3 1', 'rgba(220,255,235,1)'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
+      map: T.writingTex(ctx.doorCode().split('').join(' '), 'rgba(220,255,235,1)'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
     }));
     ink.position.copy(at[0]);
     ink.rotation.y = at[1];

@@ -165,6 +165,7 @@ const ctx = {
   end: endGame,
 };
 const story = createStory(ctx);
+ctx.doorCode = () => story.doorCode(); // (the floor moments write it on the wall)
 
 // ---------------------------------------------------------------- dying, endings, menus
 function died(text) {
