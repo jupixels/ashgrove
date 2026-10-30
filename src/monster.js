@@ -69,7 +69,7 @@ export function createMonster({ A, scene, audio }) {
     floor: null,
     path: [], repath: 0,
     target: null, lastSeen: null, lostT: 0, searchT: 0, stunT: 0, stunCooldown: 0,
-    suspicion: 0, sawHide: false, stepT: 0, growlT: 0,
+    suspicion: 0, sawHide: false, stepT: 0, growlT: 0, lastStep: 0,
     speedScale: 1, hearScale: 1, sightScale: 1,   // set per floor and difficulty
     route: 0, routeI: 0,                          // which patrol route it's walking, and where along it
   };
@@ -253,7 +253,13 @@ export function createMonster({ A, scene, audio }) {
     if (moveSpeed && dist < 45) {
       footfalls(dt, () => {
         const v = 1.8 * near(dist, 45) ** 1.2;
-        if (v > 0.03) audio.play(Math.random() < 0.2 ? 'monster_drag_tubes' : 'monster_footstep_heavy', { volume: v, pos: group.position });
+        if (v < 0.03) return;
+        // one of its three footsteps (never the same twice running), at its feet; now and then the tubes drag
+        m.lastStep = (m.lastStep + 1 + Math.floor(Math.random() * 2)) % 3 || 0;
+        const at = new THREE.Vector3(group.position.x, 0.15, group.position.z);
+        const name = audio.buffers && audio.buffers.monster_step_1 ? `monster_step_${m.lastStep + 1}` : 'monster_footstep_heavy';
+        audio.play(name, { volume: v, pos: at });
+        if (Math.random() < 0.15) audio.play('monster_drag_tubes', { volume: v * 0.6, pos: at });
       });
     }
 

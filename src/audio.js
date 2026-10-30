@@ -42,6 +42,9 @@ const FILES = {
   elevator_ding_broken: 'sfx/elevator_ding_broken.mp3',
   drawer_morgue_slide: 'sfx/drawer_morgue_slide.mp3',
   monster_footstep_heavy: 'monster/monster_footstep_heavy.mp3',
+  monster_step_1: 'monster/monster_step_1.mp3', // its footsteps (ElevenLabs): three, picked at random
+  monster_step_2: 'monster/monster_step_2.mp3',
+  monster_step_3: 'monster/monster_step_3.mp3',
   heart_monitor_beep: 'scares/heart_monitor_beep.mp3',
   heart_monitor_flatline: 'scares/heart_monitor_flatline.mp3',
   heartbeat_slow: 'ambience/heartbeat_slow.mp3',
@@ -163,7 +166,10 @@ export class GameAudio {
   }
   occlude(node, now) {
     const blocked = this.occluded ? this.occluded(node.pos) : false;
-    const freq = blocked ? 650 : 20000, gain = blocked ? 0.55 : 1;
+    // far away sounds far away: the air takes the top off (and a wall takes off much more)
+    const d = this._ear ? Math.hypot(node.pos.x - this._ear.x, node.pos.z - this._ear.z) : 0;
+    const air = 20000 - Math.min(1, d / 40) * 16500;
+    const freq = blocked ? Math.min(650, air) : air, gain = blocked ? 0.55 : 1;
     const t = this.ctx.currentTime;
     if (now) { node.muffle.frequency.value = freq; node.out.gain.value = gain; return; }
     node.muffle.frequency.setTargetAtTime(freq, t, 0.15);
@@ -173,6 +179,7 @@ export class GameAudio {
   listen(camera) {
     if (!this.ctx) return;
     const l = this.ctx.listener, p = camera.position;
+    this._ear = p;
     camera.getWorldDirection(this._fwd || (this._fwd = p.clone()));
     if (l.positionX) {
       l.positionX.value = p.x; l.positionY.value = p.y; l.positionZ.value = p.z;
