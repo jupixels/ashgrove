@@ -615,8 +615,17 @@ export function createStory(ctx) {
     }
     if (corner.state === 'shown') {
       monster.group.lookAt(player.position.x, 0, player.position.z);
+      // a nudge, once, if you haven't thought to raise the phone: the camera sees what your eyes can't
+      if (player.phoneUp) corner.usedPhone = true;
+      corner.hintT = (corner.hintT || 0) + dt;
+      if (!F().cornerHint && !corner.usedPhone && corner.hintT > 5) {
+        F().cornerHint = true;
+        audio.play('phone_camera_raise', { volume: 0.25 }); // the phone buzzes in your pocket
+        const key = (player.keymap.phone || 'KeyR').replace(/^Key|^Digit/, '');
+        ui.message(`You feel watched from the corner, but there's nothing there. Your phone camera might see what you can't. [${key}]`, 6000);
+      }
       if (player.phoneUp && player.facing(monster.group.position.clone().setY(1.6)) > 0.93) corner.seenT += dt;
-      if (!inPlayroom) { corner.state = 'idle'; monster.group.visible = false; monster.phoneOnly(false); monster.mode = 'off'; }
+      if (!inPlayroom) { corner.state = 'idle'; corner.hintT = 0; monster.group.visible = false; monster.phoneOnly(false); monster.mode = 'off'; }
     }
     if (corner.state === 'armed' && !inPlayroom) { corner.state = 'idle'; monster.phoneOnly(false); monster.mode = 'off'; }
   }
