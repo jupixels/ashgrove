@@ -72,12 +72,12 @@ export function ceilingTex() {
   });
 }
 
-export function writingTex(text) {
+export function writingTex(text, color = 'rgba(90,0,0,0.92)') {
   const t = makeTex(256, 64, 5, (g, w, h, r) => {
     g.clearRect(0, 0, w, h);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillStyle = 'rgba(90,0,0,0.92)';
+    g.fillStyle = color;
     const tw = fitText(g, text, w / 2, h / 2 - 4, w - 24, 34, '"Special Elite", serif');
     // drips, only under the letters
     for (let i = 0; i < 14; i++) {

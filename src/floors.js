@@ -258,13 +258,12 @@ export const FLOORS = {
     objects: [
       { type: 'elevator', x: 35, z: 3 },
       { type: 'rubble', x: 2, z: 1 },
-      { type: 'writing', x: 21, z: 3, face: 'south', text: '1 0 3 1', phoneOnly: true },
       { type: 'writing', x: 13, z: 6, face: 'north', text: 'HE HEARS THEIR HEARTS' },
     ],
     notes: [
       { title: 'Procedure 31', text: 'Joined patients 9 and 11.\nShared circulation stable.\n\nPatient 11 asked for her mother.\nShe asked in patient 9\'s voice.' },
-      { title: "Dr. Voss's desk", text: "I keep forgetting the door code.\nIt is the night it begins again.\n\nI wrote it where only cameras can see." },
       { title: 'Records', text: 'Continuance Program summary\n\nPatients enrolled: 14\nPatients discharged: 0\nHeartbeats recorded: 1' },
+      { title: 'A torn page (Dr. Voss\'s handwriting)', text: "I keep forgetting the door code to my office.\nIt is the night it begins again.\n\nSo I wrote it big, on a wall on this floor,\nwhere only cameras can see." },
     ],
     tapes: ['voss_tape_5', 'voss_tape_7'],
   },

@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import * as T from './textures.js';
+import { PHONE_LAYER } from './world.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const cellPos = (x, z) => V(x * 2 + 1, 0, z * 2 + 1);
@@ -191,6 +192,27 @@ export function createMoments(ctx) {
     });
   }
 
+  // ---------------------------------------------------------------- Dr. Voss's door code, in ink only the camera sees
+  // big and glowing through the phone, invisible to the eye; on a different wall each game
+  const CODE_SPOTS = [
+    [21, 3, 'south'], [11, 6, 'north'], [29, 3, 'south'], [20, 9, 'west'], [21, 8, 'east'], [37, 9, 'west'],
+  ];
+  function doorCode() {
+    const f = ctx.floor;
+    if (F().codeSpot === undefined) F().codeSpot = Math.floor(Math.random() * CODE_SPOTS.length);
+    const [x, z, face] = CODE_SPOTS[F().codeSpot % CODE_SPOTS.length];
+    const c = cellPos(x, z).setY(1.55);
+    const at = { south: [c.clone().setZ((z + 1) * 2 + 0.05), 0], north: [c.clone().setZ(z * 2 - 0.05), Math.PI],
+      east: [c.clone().setX((x + 1) * 2 + 0.05), Math.PI / 2], west: [c.clone().setX(x * 2 - 0.05), -Math.PI / 2] }[face];
+    const ink = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.6), new THREE.MeshBasicMaterial({
+      map: T.writingTex('1 0 3 1', 'rgba(220,255,235,1)'), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
+    }));
+    ink.position.copy(at[0]);
+    ink.rotation.y = at[1];
+    ink.layers.set(PHONE_LAYER);
+    f.add(ink);
+  }
+
   // ---------------------------------------------------------------- per floor
   const FLOORS = {
     F1() {
@@ -204,6 +226,7 @@ export function createMoments(ctx) {
       vent({ at: [11, 7], face: 'north', range: 12 });                      // the playroom
     },
     F3() {
+      doorCode();
       vent({ at: [12, 7], face: 'north', range: 14 });                      // the ICU
       phone({ at: [31, 7], face: 'north', trigger: [30, 36, 4, 11], flag: 'phoneF3' }); // records
     },
