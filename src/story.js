@@ -466,7 +466,7 @@ export function createStory(ctx) {
         maya.play('scared');
         await w(len('sam_found_maya', 2.5));
         voice('maya_rescued', 'Maya', 'You came back. You actually came back. Go, GO, it\'s right behind us!', 4);
-        await w(1.5);
+        await w(len('maya_rescued', 4) + 0.2); // let her finish before Sam shouts
         voice('sam_run', 'Sam', 'RUN! Up the stairs, GO!', 1.5);
         mayaFollowStart(maya.group.position);
         monster.startAI({ at: monster.mode === 'ai' ? monster.group.position.clone() : undefined, avoid: player.position, state: 'chase' });
