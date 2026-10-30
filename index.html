@@ -88,7 +88,8 @@
     #credits .roll { position: absolute; top: 100%; width: 100%; text-align: center; line-height: 2.2; font-size: 18px; white-space: pre-line; }
     #pause .stats { color: #8a8576; margin: 6px 0 22px; font-size: 15px; }
     #objective { position: fixed; top: 28px; left: 32px; font-size: 18px; opacity: 0; color: #cfc8b2; text-shadow: 0 0 6px #000; max-width: 60vw; }
-    #objective.show { animation: objective 7s forwards; }
+    #objective.show { animation: objective 3s forwards; }
+    #objective.hidden { visibility: hidden; }
     #prompt { position: fixed; top: 58%; width: 100%; text-align: center; font-size: 16px; color: #e8e2cf; text-shadow: 0 0 4px #000, 0 0 2px #000; pointer-events: none; z-index: 6; }
     /* hold Tab: the controls card, and the tip that tells you about it */
     #controlsCard { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 7; display: none; pointer-events: none;
@@ -140,7 +141,7 @@
     #phone .mode { position: absolute; top: 10px; right: 12px; }
     #phone .cross { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px; border: 1px solid rgba(220,255,220,0.5); }
     @keyframes pulse { 50% { opacity: 0.3; } }
-    @keyframes objective { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+    @keyframes objective { 0% { opacity: 0; } 15%, 60% { opacity: 1; } 100% { opacity: 0.8; } } /* bright when it changes, then it stays */
     @keyframes jitter { 0%, 92%, 100% { transform: none; } 93% { transform: translate(4px, -2px) skewX(8deg); } 95% { transform: translate(-3px, 1px); } }
 
     /* ---- opening cutscene ---- */
@@ -175,22 +176,22 @@
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-      "./src/assets.js": "./src/assets.js?v=07983ca4e4",
-      "./src/audio.js": "./src/audio.js?v=07983ca4e4",
-      "./src/cutscene.js": "./src/cutscene.js?v=07983ca4e4",
-      "./src/engine.js": "./src/engine.js?v=07983ca4e4",
-      "./src/floors.js": "./src/floors.js?v=07983ca4e4",
-      "./src/journal.js": "./src/journal.js?v=07983ca4e4",
-      "./src/main.js": "./src/main.js?v=07983ca4e4",
-      "./src/maya.js": "./src/maya.js?v=07983ca4e4",
-      "./src/moments.js": "./src/moments.js?v=07983ca4e4",
-      "./src/monster.js": "./src/monster.js?v=07983ca4e4",
-      "./src/player.js": "./src/player.js?v=07983ca4e4",
-      "./src/save.js": "./src/save.js?v=07983ca4e4",
-      "./src/story.js": "./src/story.js?v=07983ca4e4",
-      "./src/textures.js": "./src/textures.js?v=07983ca4e4",
-      "./src/ui.js": "./src/ui.js?v=07983ca4e4",
-      "./src/world.js": "./src/world.js?v=07983ca4e4"
+      "./src/assets.js": "./src/assets.js?v=cf92a38a7e",
+      "./src/audio.js": "./src/audio.js?v=cf92a38a7e",
+      "./src/cutscene.js": "./src/cutscene.js?v=cf92a38a7e",
+      "./src/engine.js": "./src/engine.js?v=cf92a38a7e",
+      "./src/floors.js": "./src/floors.js?v=cf92a38a7e",
+      "./src/journal.js": "./src/journal.js?v=cf92a38a7e",
+      "./src/main.js": "./src/main.js?v=cf92a38a7e",
+      "./src/maya.js": "./src/maya.js?v=cf92a38a7e",
+      "./src/moments.js": "./src/moments.js?v=cf92a38a7e",
+      "./src/monster.js": "./src/monster.js?v=cf92a38a7e",
+      "./src/player.js": "./src/player.js?v=cf92a38a7e",
+      "./src/save.js": "./src/save.js?v=cf92a38a7e",
+      "./src/story.js": "./src/story.js?v=cf92a38a7e",
+      "./src/textures.js": "./src/textures.js?v=cf92a38a7e",
+      "./src/ui.js": "./src/ui.js?v=cf92a38a7e",
+      "./src/world.js": "./src/world.js?v=cf92a38a7e"
     }
   }
   </script>
@@ -346,6 +347,6 @@
     <div id="skip">hold SPACE to skip</div>
   </div>
 
-  <script type="module" src="src/main.js?v=07983ca4e4"></script>
+  <script type="module" src="src/main.js?v=cf92a38a7e"></script>
 </body>
 </html>

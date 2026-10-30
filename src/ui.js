@@ -51,6 +51,7 @@ export function createUI() {
     // ---------------------------------------------------------------- HUD
     hud(on) {
       for (const e of [el.cross, el.keycards]) e.style.display = on ? '' : 'none';
+      el.objective.classList.toggle('hidden', !on); // the objective stays up while you play
       el.cross.style.display = on ? 'block' : 'none';
       if (!on) { ui.controls(false); ui.prompt(''); el.stamina.style.opacity = 0; el.battery.style.opacity = 0; el.breath.style.opacity = 0; }
     },
