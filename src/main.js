@@ -307,6 +307,7 @@ addEventListener('keydown', (e) => {
   }
   if (game.state !== 'playing' || game.overlay || !(controls.isLocked || DEBUG)) return;
   if (e.code === 'Space') e.preventDefault();
+  if (e.repeat) return; // a held key repeats: that's not a new press (it was restarting hold-to-use and toggling the light)
   player.keyDown(e.code);
 });
 addEventListener('keyup', (e) => { if (e.code === 'Tab') ui.controls(false); player.keyUp(e.code); });

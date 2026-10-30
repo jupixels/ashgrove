@@ -188,7 +188,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     if (p.hidden) { p.unhide(); return; }
     const l = lookedAt();
     if (!l) return;
-    if (l.it.hold) { p.holdTarget = l.it; p.holdT = 0; return; }
+    if (l.it.hold) { if (p.holdTarget !== l.it) { p.holdTarget = l.it; p.holdT = 0; } return; } // already holding: keep the progress
     l.it.use();
   };
 
