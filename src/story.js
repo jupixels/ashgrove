@@ -152,12 +152,16 @@ export function createStory(ctx) {
       objective('Dawn. The fire escape, on the far edge of the roof.');
       scene(async (w) => {
         await w(3);
-        monster.show(cellPos(2, 1), player.position); // it stops in the doorway, out of the light
+        // it stops just inside the dark stairwell doorway, facing you, and won't step out into the light
+        const door = f.objects.roofDoor;
         monster.mode = 'script';
+        monster.show(door.inside, door.inside.clone().addScaledVector(door.out, 5));
         monster.anim('idle');
-        audio.play('monster_breathing', { volume: 0.6 });
+        audio.play('monster_breathing', { volume: 0.8, pos: door.inside });
         ui.message("It stops in the doorway. It won't come out into the light.", 4000);
         await w(6);
+        // then it backs away into the dark
+        for (let i = 0; i < 30; i++) { monster.group.position.addScaledVector(door.out, -0.03); await w(0.05); }
         monster.group.visible = false;
       });
     }

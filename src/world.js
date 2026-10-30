@@ -455,6 +455,7 @@ export function buildFloor(key, def, A, opts = {}) {
 
   // ---------------------------------------------------------------- stairs and payphones
   function stairs(x, z, dir) {
+    if (floor.outdoor) return roofStairs(x, z, dir);
     const c = cellCenter(x, z);
     const w = againstWall(x, z, 0.1);
     // a stairwell door with a green sign over it
@@ -466,6 +467,52 @@ export function buildFloor(key, def, A, opts = {}) {
     sign.rotation.y = w.rotY;
     add(sign);
     interact({ id: `stairs:${dir}`, pos: c.clone().setY(1.2), radius: 0.9, label: () => (dir === 'up' ? '[E] Go upstairs' : '[E] Go downstairs'), use: () => floor.onUse && floor.onUse('stairs', dir) });
+  }
+
+  // on the roof: the stairwell comes up into a concrete hut, its door hanging open onto a pitch-black inside
+  function roofStairs(x, z, dir) {
+    const c = cellCenter(x, z);
+    const w = againstWall(x, z, 0);
+    const out = facing(w.rotY);                               // out of the hut, onto the roof
+    const side = new THREE.Vector3(out.z, 0, -out.x);
+    const back = w.pos.clone().addScaledVector(out, -1.4);   // the hut reaches back over the roof edge wall
+    const front = w.pos.clone().addScaledVector(out, 1.6);   // and its front (with the doorway) out onto the roof
+    const depth = 3.0, width = 3.2, height = 2.9, door = 1.3, doorH = 2.3;
+    const mid = back.clone().lerp(front, 0.5);
+    const at = (along, y, across) => mid.clone().addScaledVector(out, along).addScaledVector(side, across).setY(y);
+    const slab = (w2, h, d, p) => { const b = box(w2, h, d, mat.wall, p.x, p.y, p.z, w.rotY); return b; };
+    slab(0.2, height, depth, at(0, height / 2, -width / 2));                                          // side walls
+    slab(0.2, height, depth, at(0, height / 2, width / 2));
+    slab(width, height, 0.2, at(-depth / 2, height / 2, 0));                                         // back
+    slab(width + 0.3, 0.2, depth + 0.3, at(0, height + 0.1, 0));                                     // roof
+    const jamb = (width - door) / 2;
+    slab(jamb, height, 0.2, at(depth / 2, height / 2, -(door / 2 + jamb / 2)));                       // front, either side of the doorway
+    slab(jamb, height, 0.2, at(depth / 2, height / 2, door / 2 + jamb / 2));
+    slab(door, height - doorH, 0.2, at(depth / 2, doorH + (height - doorH) / 2, 0));                 // over the doorway
+    // inside: nothing but black
+    const dark = new THREE.Mesh(new THREE.BoxGeometry(width - 0.3, height - 0.2, depth - 0.3), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.BackSide }));
+    dark.position.copy(at(-0.05, height / 2, 0));
+    dark.rotation.y = w.rotY;
+    add(dark);
+    // the steel door, hanging open against the front wall
+    const hinge = at(depth / 2 + 0.12, 0, door / 2);
+    const slabDoor = new THREE.Mesh(new THREE.BoxGeometry(door - 0.05, doorH - 0.05, 0.06), mat.steel);
+    slabDoor.geometry.translate(-(door - 0.05) / 2, (doorH - 0.05) / 2, 0);
+    slabDoor.position.copy(hinge);
+    slabDoor.rotation.y = w.rotY + 1.9; // swung out onto the roof
+    slabDoor.castShadow = true;
+    add(slabDoor);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.22), new THREE.MeshBasicMaterial({ map: T.signTex('STAIRS ▼'), polygonOffset: true, polygonOffsetFactor: -2 }));
+    sign.position.copy(at(depth / 2 + 0.12, doorH + 0.3, 0));
+    sign.rotation.y = w.rotY;
+    add(sign);
+    // you can't walk into it (the whole hut is solid)
+    const corners = [at(-depth / 2, 0, -width / 2), at(depth / 2, 0, width / 2)];
+    addSolid((corners[0].x + corners[1].x) / 2, (corners[0].z + corners[1].z) / 2,
+      Math.abs(corners[0].x - corners[1].x) / 2 + 0.1, Math.abs(corners[0].z - corners[1].z) / 2 + 0.1, 'wall');
+    // where something can stand, just inside the dark doorway, without stepping out into the light
+    floor.objects.roofDoor = { inside: at(depth / 2 - 0.55, 0, 0), out: out.clone() };
+    interact({ id: `stairs:${dir}`, pos: at(depth / 2 + 0.4, 1.2, 0), radius: 0.9, label: () => '[E] Go back down', use: () => floor.onUse && floor.onUse('stairs', dir) });
   }
 
   function payphone(x, z) {
