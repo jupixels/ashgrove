@@ -297,7 +297,9 @@ export function buildFloor(key, def, A, opts = {}) {
       g.add(b);
       return b;
     };
-    for (const [lx, lz] of [[-0.42, -0.92], [0.42, -0.92], [-0.42, 0.92], [0.42, 0.92]]) part(0.05, 0.56, 0.05, bedMat.frame, lx, 0.28, lz);
+    const broken = Math.random() < 0.15; // some have lost a leg and slumped
+    const legs = [[-0.42, -0.92], [0.42, -0.92], [-0.42, 0.92], [0.42, 0.92]];
+    legs.forEach(([lx, lz], i) => { if (!(broken && i === 3)) part(0.05, 0.56, 0.05, bedMat.frame, lx, 0.28, lz); });
     part(0.92, 0.06, 1.95, bedMat.frame, 0, 0.56, 0);                     // frame
     part(0.88, 0.16, 1.88, bedMat.mattress, 0, 0.67, 0);                  // mattress
     part(0.94, 0.03, 1.7, bedMat.sheet, 0, 0.765, 0.12);                  // sheet over it
@@ -308,9 +310,11 @@ export function buildFloor(key, def, A, opts = {}) {
     if (!lessGore && Math.random() < 0.5) part(0.3, 0.005, 0.4, new THREE.MeshLambertMaterial({ color: 0x4a1010 }), 0.1, 0.783, 0.2); // a stain
     g.position.copy(c);
     g.rotation.y = rotY;
+    if (broken) { g.rotation.x = 0.1; g.rotation.z = -0.07; g.position.y = -0.04; } // slumped onto the missing leg's corner
     add(g);
     addSolid(c.x, c.z, alongX ? 1.0 : 0.5, alongX ? 0.5 : 1.0, 'prop');
     const out = side.clone().multiplyScalar(openSign); // the open side
+    if (Math.random() < 0.6) ivStand(c.clone().addScaledVector(out, 0.6).addScaledVector(new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY)), -0.85)); // by the head end
     const spot = {
       x, z, group: g, bed: true,
       yaw: Math.atan2(-out.x, -out.z),                               // looking out of the open side
@@ -320,6 +324,62 @@ export function buildFloor(key, def, A, opts = {}) {
     };
     floor.lockers.push(spot);
     interact({ id: `bed:${x},${z}`, pos: c.clone().addScaledVector(out, 0.45).setY(0.5), radius: 0.6, label: () => '[E] Hide under the bed', use: () => floor.onUse && floor.onUse('locker', spot) });
+  }
+
+  // ---------------------------------------------------------------- IV stands and filing cabinets
+  function ivStand(pos) {
+    const g = new THREE.Group();
+    const steel = mat.metal;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.9, 5), steel);
+    pole.position.y = 0.95;
+    g.add(pole);
+    for (let i = 0; i < 4; i++) { // the wheeled base
+      const foot = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.025, 0.025), steel);
+      foot.position.y = 0.04;
+      foot.rotation.y = (i * Math.PI) / 4;
+      g.add(foot);
+    }
+    const hook = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.015, 0.015), steel);
+    hook.position.y = 1.88;
+    g.add(hook);
+    const bag = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.2, 0.04), new THREE.MeshLambertMaterial({ color: lessGore ? 0xc8d0c0 : 0x6a1a14, transparent: true, opacity: 0.8 }));
+    bag.position.set(0.12, 1.72, 0);
+    g.add(bag);
+    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.9, 3), new THREE.MeshBasicMaterial({ color: 0x8a8a80 }));
+    line.position.set(0.12, 1.2, 0.02);
+    line.rotation.z = 0.15;
+    g.add(line);
+    g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    g.position.set(pos.x, 0, pos.z);
+    g.rotation.y = Math.random() * 6;
+    if (Math.random() < 0.25) { g.rotation.z = 1.45; g.position.y = 0.06; } // knocked over
+    add(g);
+  }
+  function filingCabinet(x, z) {
+    const w = againstWall(x, z, 0.3);
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.3, 0.6), psx(new THREE.MeshLambertMaterial({ color: 0x5a5e58 })));
+    body.position.y = 0.65;
+    body.castShadow = body.receiveShadow = true;
+    g.add(body);
+    const open = Math.floor(Math.random() * 4); // one drawer hanging open
+    for (let i = 0; i < 4; i++) {
+      const d = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.27, 0.03), psx(new THREE.MeshLambertMaterial({ color: 0x6a6e66 })));
+      d.position.set(0, 0.17 + i * 0.31, 0.31 + (i === open ? 0.25 : 0));
+      g.add(d);
+      if (i === open) { // a pulled-out drawer: sides and a floor, papers spilling
+        const tray = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.02, 0.28), d.material);
+        tray.position.set(0, 0.06 + i * 0.31, 0.43);
+        g.add(tray);
+      }
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), mat.metal);
+      handle.position.set(0, 0.22 + i * 0.31, 0.34 + (i === open ? 0.25 : 0));
+      g.add(handle);
+    }
+    g.position.copy(w.pos);
+    g.rotation.y = w.rotY;
+    add(g);
+    addSolid(w.pos.x, w.pos.z, 0.3, 0.3, 'prop');
   }
 
   // ---------------------------------------------------------------- bottles and bricks to throw
@@ -844,6 +904,8 @@ export function buildFloor(key, def, A, opts = {}) {
         }
       }
       if (Math.random() < 0.035) decal(T.puddleTex(x * 3 + z), 1.3, 1.3, c.clone().setY(0.018), -Math.PI / 2, Math.random() * 6);
+      const wallSide = DIRS.find(([dx, dz]) => !walkable(x + dx, z + dz));
+      if (wallSide && reach(x, z, ...wallSide) > 2 && !nearDoor(x, z) && Math.random() < 0.05) { filingCabinet(x, z); continue; }
       if (Math.random() < 0.03 && DIRS.every(([dx, dz]) => walkable(x + dx, z + dz)) && !nearDoor(x, z)) chair(c, Math.random() < 0.6);
       else if (Math.random() < 0.045) floor.dropThrowable(Math.random() < 0.6 ? 'bottle' : 'brick', c.clone().add(new THREE.Vector3(jitter(1.2), 0, jitter(1.2))));
     }
