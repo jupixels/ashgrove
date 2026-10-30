@@ -9,9 +9,9 @@ CHARACTERS = {
     # the Ch25 creature with the downloaded mutant/zombie animations
     'monster': dict(folder='mixamo', character='Ch25_nonPBR.fbx', out='monster.glb', slim=0.62,
                     anims=['idle', 'walk', 'run', 'roar', 'attack', 'crawl', 'search']),
-    # Maya (Ch02): walking, breathing idle, scared idle for when it's close, and an injured run for the escape
+    # Maya (Ch02): walk + idle (the intro), scared idle, and injured run / walk / idle for following you out
     'maya': dict(folder='maya', character='Ch02_nonPBR.fbx', out='maya.glb',
-                 anims=['walk', 'idle', 'scared', 'run']),
+                 anims=['walk', 'idle', 'scared', 'run', 'injured_walk', 'injured_idle']),
 }
 TEXTURE_SIZE = 512   # the source ships 2048-4096px maps; the game renders at 240p
 

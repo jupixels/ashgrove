@@ -547,7 +547,13 @@ export function createStory(ctx) {
     maya.group.position.set(pos.x, 0, pos.z);
     mayaFollowing = true;
     mayaPath = [];
+    mayaMoving = mayaRunning = false;
+    mayaSpeed = 0;
   }
+  // Maya following you: she walks (hurt) when she's close, runs to catch up when she falls behind, and stands with an
+  // injured idle (or scared, in a chase) when she's caught up. Gaps between the start/stop and walk/run distances
+  // keep her from flicking between them, and her speed and turning ease rather than snap.
+  let mayaMoving = false, mayaRunning = false, mayaSpeed = 0;
   function updateMaya(dt) {
     if (!maya.group.visible) return;
     maya.mixer.update(dt);
@@ -555,7 +561,10 @@ export function createStory(ctx) {
     const f = floor();
     const g = maya.group.position;
     const d = Math.hypot(player.position.x - g.x, player.position.z - g.z);
-    if (d > 2.2) {
+    if (mayaMoving ? d < 1.8 : d > 2.8) mayaMoving = !mayaMoving;
+    if (mayaRunning ? d < 4.5 : d > 5.5) mayaRunning = !mayaRunning;
+    const turnTo = (yaw) => { maya.group.rotation.y += Math.atan2(Math.sin(yaw - maya.group.rotation.y), Math.cos(yaw - maya.group.rotation.y)) * Math.min(1, dt * 6); };
+    if (mayaMoving) {
       mayaRepath -= dt;
       if (!mayaPath.length || mayaRepath <= 0) { mayaPath = f.route(f.cellOf(g), f.cellOf(player.position)).slice(1); mayaRepath = 0.5; }
       const next = mayaPath.length > 1 ? f.cellCenter(...mayaPath[0]) : player.position.clone().setY(0);
@@ -564,16 +573,19 @@ export function createStory(ctx) {
       if (step < 0.25 && mayaPath.length) mayaPath.shift();
       else {
         dir.normalize();
-        const speed = d > 6 ? 4.4 : 2.6;
-        g.addScaledVector(dir, Math.min(step, speed * dt));
-        maya.group.rotation.y = Math.atan2(dir.x, dir.z);
-        maya.play('run', THREE.MathUtils.clamp(speed / 3.2, 0.85, 1.35)); // her injured run, keeping up with you
+        const want = mayaRunning ? 4.2 : 1.9;
+        mayaSpeed += (want - mayaSpeed) * Math.min(1, dt * 3);
+        g.addScaledVector(dir, Math.min(step, mayaSpeed * dt));
+        turnTo(Math.atan2(dir.x, dir.z));
+        if (mayaRunning) maya.play('run', THREE.MathUtils.clamp(mayaSpeed / 3.6, 0.85, 1.3));
+        else maya.play('injured_walk', THREE.MathUtils.clamp(mayaSpeed / 1.4, 0.8, 1.5));
         const door = mayaPath.length ? f.doorAt(...mayaPath[0]) : null;
         if (door && !door.open) door.openNow(false);
       }
     } else {
-      maya.play(monster.mode === 'ai' && monster.state === 'chase' ? 'scared' : 'idle');
-      maya.group.lookAt(player.position.x, 0, player.position.z);
+      mayaSpeed = 0;
+      maya.play(monster.mode === 'ai' && monster.state === 'chase' ? 'scared' : 'injured_idle');
+      turnTo(Math.atan2(player.position.x - g.x, player.position.z - g.z)); // turn to face you, smoothly
     }
   }
 
