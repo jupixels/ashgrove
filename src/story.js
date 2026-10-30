@@ -8,6 +8,7 @@
 //  6. Ward C            4F    free Maya (or don't), the ceiling, the roof, the fire escape
 import * as THREE from 'three';
 import { FLOORS, CHAPTERS, TAPE_LINES, TAPE_COUNT } from './floors.js';
+import { createMoments } from './moments.js';
 
 const STOP = Symbol('stop');
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -19,6 +20,7 @@ export function createStory(ctx) {
   const F = () => S().flags;
   const floor = () => ctx.floor;
   const story = { time: 0, gen: 0, dying: false };
+  const moments = createMoments(ctx); // the wheelchair, the phone, the mirror, the vents, the footprints
   let waits = [];
   const loops = {}; // positional sound loops: { name: { loop, pos, range, base } }
 
@@ -42,7 +44,7 @@ export function createStory(ctx) {
   }
   function walkie(name, text, guess = 4) {
     audio.play('walkie_static', { volume: 1 }); // the walkie crackling on
-    setTimeout(() => voice(name, 'Maya (walkie)', text, guess, 'whisper'), 500);
+    setTimeout(() => voice(name, 'Maya? (walkie)', text, guess, 'whisper'), 500);
   }
   function objective(text) { S().objective = text; ui.objective(text); }
   const scare = (power = 1) => {
@@ -80,6 +82,7 @@ export function createStory(ctx) {
 
   // ---------------------------------------------------------------- arriving on a floor
   story.enterFloor = (key, how) => {
+    moments.enterFloor(key);
     story.gen++;
     waits = [];
     stopAllLoops();
@@ -131,8 +134,8 @@ export function createStory(ctx) {
       if (!F().mayaFreed) {
         placeMayaOnTable();
         loop('stitching_sound', f.objects.mayaTable.pos.clone().setY(1), 14, 0.9);
-        scene(async (w) => { await w(2); walkie('maya_walkie_3', "It's coming back. I can hear the tubes dragging. Please hurry.", 4); });
-        objective('Find Maya. The operating theatre.');
+        scene(async (w) => { await w(2.5); ui.message('From the operating theatre: metal on metal. Then something that might be a muffled voice.', 4500); });
+        objective('Follow the sound. The operating theatre.');
       } else {
         mayaFollowStart(player.position);
         objective('Get Maya to the roof. The stairs are at the end of the ward.');
@@ -730,6 +733,7 @@ export function createStory(ctx) {
     if (deathScare) { deathScare(dt); return; }
     const f = floor();
     if (!f) return;
+    moments.update(dt);
     for (const k in loops) {
       const l = loops[k];
       if (l.loop.gain) {
@@ -777,15 +781,27 @@ export function createStory(ctx) {
       ['ENDING: ESCAPED', 3.5],
     ];
     if (s.tapes.length >= TAPE_COUNT) {
-      cards.push(['You found every one of Dr. Voss\'s tapes.', 3]);
-      cards.push(['"I didn\'t run. I\'m still here. I\'m all of them now."', 5, () => audio.play('voss_tape_8', { volume: 1 })]);
-      cards.push(['SECRET ENDING: HE NEVER LEFT', 3.5]);
+      // every tape found: the hidden third ending. Voss's last entry, and what this place was for.
+      cards.splice(cards.length - 1, 1); // instead of the usual ending title
+      cards.push(
+        ['You found every one of Dr. Voss\'s tapes.\nThere is one more entry, after the last.', 4.5, () => audio.play('cassette_insert_play', { volume: 0.7 })],
+        ['"Final entry. Whoever has collected these: you deserve to know what I did."', 5, () => audio.play('voss_final', { volume: 1 })],
+        ['"My daughter died on the fourth floor in 1989.\nHer heart stopped, and I could not start it again."', 6],
+        ['"So I built a body that cannot stop. Every patient I joined to it gave it another heart. When one fails, the others carry it."', 7],
+        ['"I called it the Continuance. It does not die. It only grows.\nAnd to grow, it needs more of us."', 6.5],
+        ['"It doesn\'t kill the people it takes. It keeps them."', 5],
+        ['"I\'m in there too. Somewhere. Some nights I can still hear her music box."', 5.5],
+        kind === 'together'
+          ? ['Maya sleeps the whole drive home.\nBy morning, her stitches have healed. All of them.', 5.5]
+          : ['Some nights, you swear you can hear a music box.', 4.5],
+        ['ENDING: CONTINUANCE', 4],
+      );
     }
     cards.push([`Tapes found: ${s.tapes.length}/${TAPE_COUNT}\nTimes admitted: ${s.deaths}\nTime: ${time}`, 5]);
     return cards;
   };
 
-  story.reset = () => { if (deathScare) ctx.clearView(false); deathScare = null; monster.light = null; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
+  story.reset = () => { moments.reset(); if (deathScare) ctx.clearView(false); deathScare = null; monster.light = null; story.gen++; waits = []; stopAllLoops(); mayaFollowing = false; corner.state = 'idle'; icuBeats = -1; sight.current = null; };
   return story;
 }
 

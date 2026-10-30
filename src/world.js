@@ -251,6 +251,29 @@ export function buildFloor(key, def, A, opts = {}) {
     interact({ id: `locker:${x},${z}`, pos: w.pos.clone().setY(1.3), radius: 0.6, label: () => '[E] Hide in locker', use: () => floor.onUse && floor.onUse('locker', l) });
   }
 
+  // ---------------------------------------------------------------- an old wheelchair (static props, and the one that rolls by itself)
+  floor.makeWheelchair = () => {
+    const g = new THREE.Group();
+    const steel = mat.metal, seat = psx(new THREE.MeshLambertMaterial({ color: 0x3a3430 }));
+    const part = (geo, m, x, y, z, rx = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, 0, rz); o.castShadow = true; g.add(o); return o; };
+    part(new THREE.BoxGeometry(0.46, 0.05, 0.44), seat, 0, 0.5, 0);                       // seat
+    part(new THREE.BoxGeometry(0.46, 0.45, 0.04), seat, 0, 0.75, -0.22);                  // back
+    for (const s of [-1, 1]) {
+      part(new THREE.TorusGeometry(0.3, 0.02, 4, 12), steel, s * 0.27, 0.32, -0.05, 0, 0).rotation.y = Math.PI / 2; // big wheels
+      part(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 8), steel, s * 0.2, 0.06, 0.26, 0, Math.PI / 2);            // castors
+      part(new THREE.BoxGeometry(0.03, 0.5, 0.03), steel, s * 0.22, 0.75, -0.25);                                    // back posts
+      part(new THREE.BoxGeometry(0.03, 0.03, 0.12), steel, s * 0.22, 0.99, -0.31);                                   // handles
+      part(new THREE.BoxGeometry(0.03, 0.03, 0.4), steel, s * 0.24, 0.7, 0);                                         // arm rests
+      part(new THREE.BoxGeometry(0.03, 0.4, 0.03), steel, s * 0.2, 0.3, 0.22);                                       // front legs
+    }
+    part(new THREE.BoxGeometry(0.4, 0.02, 0.14), steel, 0, 0.12, 0.34);                    // footrest
+    return g;
+  };
+  floor.add = add;
+  floor.interact = interact;
+  floor.bloodTex = (i) => A.tex.blood[i % 3];
+  floor.addSolid = addSolid;
+
   // ---------------------------------------------------------------- beds you can crawl under
   // An old hospital bed: a frame on four legs, a stained mattress and sheet, a rail, and room underneath. The sheet
   // hangs down on the wall side; the other side is open, and that's where you look out from when you hide.
@@ -525,7 +548,7 @@ export function buildFloor(key, def, A, opts = {}) {
       else if (ch === 'y') prop('bed', c, Math.PI * Math.round(Math.random()) + jitter(0.3), { scale: 1.05 });
       else if (ch === 'G') prop('gurney', c, jitter(0.8));
       else if (ch === 'O') prop('opchair', c, Math.PI / 2 + jitter(0.3));
-      else if (ch === 'W') prop('gurney', c, jitter(3), { scale: 1.0 });
+      else if (ch === 'W') { const wc = floor.makeWheelchair(); wc.position.copy(c); wc.rotation.y = Math.random() * 6; add(wc); addSolid(c.x, c.z, 0.35, 0.35, 'prop'); }
       else if (ch === 'c') { const w = againstWall(x, z, 0.02); prop('cupboard', w.pos, w.rotY); prop('cupboardTop', w.pos, w.rotY, { y: 1.75, solid: false }); }
       else if (ch === 'm' || ch === 'n') { const w = againstWall(x, z, 0.4); prop(ch === 'm' ? 'monitor' : 'machine', w.pos, w.rotY + jitter(0.3)); }
       else if (ch === 't') tray(x, z);

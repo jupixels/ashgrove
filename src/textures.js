@@ -210,3 +210,18 @@ export function puddleTex(seed = 1) {
     for (let i = 0; i < 4; i++) blob(g, w / 2 + (r() - 0.5) * 24, h / 2 + (r() - 0.5) * 24, 4 + r() * 6, 'rgba(120,130,140,0.18)');
   });
 }
+
+// a bloody sneaker print (Maya's): sole and heel with tread lines
+export function footprintTex(left) {
+  const t = makeTex(32, 64, left ? 900 : 901, (g, w, h, r) => {
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = 'rgba(80,4,4,0.85)';
+    g.beginPath(); g.ellipse(w / 2 + (left ? 1 : -1), 20, 10, 16, 0, 0, Math.PI * 2); g.fill(); // ball of the foot
+    g.beginPath(); g.ellipse(w / 2, 50, 8, 10, 0, 0, Math.PI * 2); g.fill();                     // heel
+    g.fillStyle = 'rgba(0,0,0,0.5)';
+    for (let y = 8; y < 60; y += 5) if (y < 36 || y > 41) g.fillRect(6, y, w - 12, 1);            // tread
+    for (let i = 0; i < 40; i++) { g.clearRect(r() * w, r() * h, 2, 2); }                          // patchy
+  });
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  return t;
+}

@@ -733,20 +733,16 @@ export function createIntro(ctx) {
         aim(start.lerp(V(12.2, 1.45, 12.3), walkIn), look, dark ? 3 : 1.2);
       },
     },
-    { // 9. the walkie-talkie
+    { // 9. nobody answers. Is she alive? Sam has no way of knowing.
       enter() {
-        const walkieAt = 0.6 + len('sam_walkie', 2.2) + 0.9;
-        this.dur = walkieAt + len('maya_walkie_1', 9) + 1.4;
-        this.endAt = this.dur - 0.8;
+        const quietAt = 0.6 + len('sam_walkie', 2.2);
+        this.dur = quietAt + 3.6;
         line('sam_walkie', 'Sam', 'Maya?! Maya, where are you?!', 2.2);
-        later(() => audio.play('walkie_static', { volume: 1 }), (walkieAt - 0.5) * 1000); // the walkie crackling on
-        later(() => line('maya_walkie_1', 'Maya (walkie)',
-          "Sam... it took me upstairs... it's sewing something... Please. Find the keycards. Get the lockdown off.", 9, 'whisper'),
-        walkieAt * 1000);
+        // nothing answers. Somewhere far above, something hums.
+        later(() => audio.play('monster_humming', { volume: 0.22 }), (quietAt + 1.2) * 1000);
       },
       update(t) {
         aim(V(12.4, 1.6, 12.3), V(24, 1.35, 11.9), 0.9); // staring down the hall where it took her
-        if (t > this.endAt && !this.end) { this.end = true; audio.play('walkie_static', { volume: 0.6 }); }
       },
     },
     { // 10. title card, wait for a click

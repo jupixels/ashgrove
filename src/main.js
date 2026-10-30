@@ -13,6 +13,7 @@ import { createStory, CREDITS } from './story.js';
 import { createUI } from './ui.js';
 import { setupMaya } from './maya.js';
 import * as SAVE from './save.js';
+import { createPrologue, PROLOGUE_START } from './prologue.js';
 
 const DEBUG = location.search.includes('debug');
 const ui = createUI();
@@ -91,10 +92,11 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) saveN
 
 // ---------------------------------------------------------------- floors
 let ambienceLoop = null;
-function loadFloor(key, arrive) {
+// quiet: no story on this floor (the prologue): doors and hiding work, nothing else is remembered
+function loadFloor(key, arrive, quiet = false) {
   if (game.floor) { scene.remove(game.floor.group); game.floor.dispose(); }
   const def = FLOORS[key];
-  const floor = buildFloor(key, def, A, { taken: game.taken, lessGore: settings.lessGore, powered: !!game.save.flags.power });
+  const floor = buildFloor(key, def, A, { taken: quiet ? new Set() : game.taken, lessGore: settings.lessGore, powered: !quiet && !!game.save.flags.power });
   floor.onTake = (kind) => player.addThrowable(kind);
   floor.onSound = (name, pos, vol) => audio.play(name, { pos, volume: vol * THREE.MathUtils.clamp(1 - camera.position.distanceTo(pos) / 25, 0.1, 1) });
   scene.add(floor.group);
@@ -113,6 +115,12 @@ function loadFloor(key, arrive) {
   player.setPhone(false);
   if (ambienceLoop) ambienceLoop.stop(1);
   ambienceLoop = def.ambience && audio.buffers[def.ambience] ? audio.loop(def.ambience, 0.35) : null;
+  if (quiet) {
+    monster.setFloor(floor);
+    floor.onUse = (kind, data) => { if (kind === 'door') data.openNow(); else if (kind === 'locker') player.hide(data); };
+    floor.onPickup = () => {};
+    return;
+  }
   story.enterFloor(key, typeof arrive === 'string' ? arrive : 'checkpoint');
 }
 
@@ -156,6 +164,7 @@ const ctx = {
   end: endGame,
 };
 const story = createStory(ctx);
+const prologue = createPrologue({ audio, ui, player, monster, fx, get floor() { return game.floor; }, onDone: () => startIntro() });
 
 // ---------------------------------------------------------------- dying, endings, menus
 function died(text) {
@@ -205,6 +214,7 @@ function startPlaying() {
 
 function toMenu() {
   game.state = 'menu';
+  prologue.stop();
   silenceHeart();
   story.reset();
   monster.mode = 'off';
@@ -237,9 +247,31 @@ function newGame() {
     persist();
     resetFx();
     story.reset();
-    loadFloor('F1', 'start');
     ui.hideMainMenu();
-    if (DEBUG && location.search.includes('nointro')) { startPlaying(); return; }
+    if (DEBUG && location.search.includes('nointro')) { loadFloor('F1', 'start'); startPlaying(); return; }
+    // first, the night before: play as Maya
+    loadFloor('F1', PROLOGUE_START, true);
+    game.state = 'prologue';
+    player.frozen = false;
+    ui.hud(true);
+    controls.lock();
+    prologue.start();
+  });
+}
+
+// the found-footage intro (after the prologue)
+function startIntro() {
+  game.state = 'intro'; // (before unlocking the mouse, so it doesn't open the pause menu)
+  controls.unlock();      // the intro ends on a "click to play" card
+  prologue.stop();
+  player.carry.length = 0;
+  ui.carry([]);
+  player.battery = 1;
+  resetFx();
+  story.reset();
+  loadFloor('F1', 'start');
+  {
+    ui.hud(false);
     game.state = 'intro';
     player.frozen = true;
     intro = createIntro({
@@ -260,11 +292,12 @@ function newGame() {
         ui.chapter(CHAPTERS[1].title, 'GROUND FLOOR');
         game.save.flags.card1 = true;
         setTimeout(() => ui.controlsTip(), 1500); // once you're in control: how to see the controls
+        setTimeout(() => { if (game.state === 'playing') ui.message('Maya had the other walkie-talkie. Yours only hisses static.', 5000); }, 9000);
         setTimeout(() => ui.objective('Find a way to lift the lockdown.'), 3800);
       },
     });
     intro.start();
-  });
+  }
 }
 
 function continueGame() {
@@ -314,7 +347,7 @@ function showPause() {
 
 controls.addEventListener('lock', () => { ui.pauseMenu(false); ui.hud(game.state === 'playing'); });
 controls.addEventListener('unlock', () => {
-  if (game.state === 'playing' && !game.overlay) { saveNow(); showPause(); }
+  if ((game.state === 'playing' || game.state === 'prologue') && !game.overlay) { saveNow(); showPause(); }
 });
 
 // ---------------------------------------------------------------- input
@@ -324,7 +357,7 @@ addEventListener('keydown', (e) => {
     if (game.state === 'playing') ui.controls(true);
     return;
   }
-  if (game.state !== 'playing' || game.overlay || !(controls.isLocked || DEBUG)) return;
+  if ((game.state !== 'playing' && game.state !== 'prologue') || game.overlay || !(controls.isLocked || DEBUG)) return;
   if (e.code === 'Space') e.preventDefault();
   if (e.repeat) return; // a held key repeats: that's not a new press (it was restarting hold-to-use and toggling the light)
   player.keyDown(e.code);
@@ -443,6 +476,12 @@ function frame() {
     if (!intro.frozen) intro.update(dt);
     monster.update(dt, null, monsterEvents);
   } else if (game.state === 'playing' && game.floor && (controls.isLocked || DEBUG) && !game.overlay) simulate(dt * fx.timeScale);
+  else if (game.state === 'prologue' && game.floor && (controls.isLocked || DEBUG) && !game.overlay) {
+    player.update(dt);
+    monster.update(dt, null, monsterEvents);
+    prologue.update(dt);
+    game.floor.update(dt);
+  }
   if (game.floor) game.floor.updateLights(dt, (pos) => { if (camera.position.distanceTo(pos) < 10) audio.play('flicker', { volume: 0.4, pos }); });
   updateFog(dt);
   castShadows();

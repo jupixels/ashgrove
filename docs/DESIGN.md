@@ -41,7 +41,7 @@ Rumors say if you go inside at night, the lights come back on.
 - **Sam Reyes (16), the player.** Quiet, curious, runs a tiny urban-exploration YouTube channel with 300 subscribers.
   Mostly seen through their own phone camera and seen in reflections.
 - **Maya Okafor (16), Sam's best friend.** Bold, funny, the one who dared Sam to do this. She has the camera rig.
-  Taken early. Her voice on the walkie-talkie keeps the player going.
+  Taken early. Nobody knows if she's alive: the not-knowing keeps the player going (and the monster uses it).
 - **THE STITCHED, the monster.** Seven feet tall, hunched, wearing a dozen torn hospital gowns sewn together.
   Its face is a surgical mask stitched into the skin. More than one mouth. Too many fingers. IV lines and
   tubes trail behind it and **drag on the floor, so you hear it coming**. Hunts by **sound**. It is fast, but
@@ -66,7 +66,7 @@ on the side, until the camera drops and it becomes cinematic.
 | 6 | Hallway | Maya walks ahead filming. Sam's phone glitches. In one frame a tall figure stands at the end of the hall. Next frame it's gone. Only Sam's camera caught it. Sam: "Maya. Maya, come back." | Glitch hiss, then silence |
 | 7 | **THE LIGHTS** | Every fluorescent light in the building slams on at once, then dies. A PA crackles: *"Quarantine protocol engaged. All exits sealed. Please remain calm."* Steel shutters slam down over the ambulance bay behind them. | Electric THUNK chain, PA, metal slam |
 | 8 | Darkness | Maya screams, very close and then far away, like something dragged her *up* through the ceiling tiles. Her camera drops through a vent and lands at Sam's feet, still recording. | Scream, scrape, dragging tubes |
-| 9 | Close-up | Sam picks up Maya's walkie-talkie. Static. Then Maya's voice, whispering: *"Sam... it took me upstairs... it's sewing something... please, get the keycards, get the lockdown off..."* | Walkie static, whisper |
+| 9 | Close-up | Sam shouts for Maya. Nothing answers. Somewhere far above, something hums. | Silence, distant hum |
 | 10 | Title card | **ASHGROVE** in cracked white typewriter text. Controls fade in. Player gets control. | Sting + drone |
 
 ---
