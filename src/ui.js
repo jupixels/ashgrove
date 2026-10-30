@@ -125,7 +125,27 @@ export function createUI() {
       ui._glitchT = setTimeout(() => { document.body.classList.remove('glitching'); $('vhs').classList.remove('on'); }, 460);
       if (ui.onGlitch) ui.onGlitch();
     },
-    mainMenu({ canContinue, onNew, onContinue, onSettings, onCredits }) {
+    // which endings you've found: locked ones show a hint, the secret one tells you what it takes
+    endingsMenu(found, onBack) {
+      const ENDINGS = [
+        { id: 'together', name: 'TOGETHER', text: 'You got Maya out. You climbed down together as the sun came up.', hint: 'Some people are worth going back for.' },
+        { id: 'escaped', name: 'ESCAPED', text: 'You got out alone. You did not look back. It followed you anyway.', hint: 'Not everyone makes it to the roof.' },
+        { id: 'continuance', name: 'CONTINUANCE', secret: true, text: 'Dr. Voss\'s last entry: what he built on the fourth floor, and why it keeps the people it takes.', hint: 'Find all 8 of Dr. Voss\'s tapes, then escape.' },
+      ];
+      const list = $('endingsList');
+      list.innerHTML = '';
+      for (const e of ENDINGS) {
+        const got = found.includes(e.id);
+        const d = document.createElement('div');
+        d.className = `card${got ? '' : ' locked'}${e.secret ? ' secret' : ''}`;
+        d.innerHTML = `${e.secret ? '<div class="tag">SECRET ENDING</div>' : ''}<h4>${got ? e.name : '???'}</h4><p>${got ? e.text : e.hint}</p>`;
+        list.appendChild(d);
+      }
+      $('endingsCount').textContent = `${found.length} of ${ENDINGS.length} found`;
+      show($('endings'), true);
+      $('btnEndingsBack').onclick = () => { show($('endings'), false); onBack(); };
+    },
+    mainMenu({ canContinue, onNew, onContinue, onSettings, onCredits, onEndings }) {
       show(el.title, true);
       el.loading.style.display = 'none';
       el.mainMenu.style.display = 'flex';
@@ -134,6 +154,7 @@ export function createUI() {
       $('btnNew').onclick = onNew;
       $('btnSettings').onclick = onSettings;
       $('btnCredits').onclick = onCredits;
+      $('btnEndings').onclick = onEndings;
     },
     hideMainMenu() { show(el.title, false); },
     pauseMenu(on, { stats, onResume, onSettings, onQuit } = {}) {

@@ -196,8 +196,11 @@ function endGame(kind) {
   controls.unlock();
   ui.hud(false);
   fx.fadeTarget = 1;
+  // which ending this is: every tape found turns either one into the secret ending
+  const id = game.save.tapes.length >= TAPE_COUNT ? 'continuance' : kind === 'together' ? 'together' : 'escaped';
+  const isNew = SAVE.addEnding(id);
   SAVE.clearSave();
-  ui.ending(story.endingCards(kind), () => ui.credits(CREDITS, toMenu));
+  ui.ending(story.endingCards(kind, { isNew, found: SAVE.loadEndings() }), () => ui.credits(CREDITS, toMenu));
 }
 
 function resetFx() {
@@ -308,6 +311,7 @@ function showMainMenu() {
     onContinue: continueGame,
     onSettings: () => { ui.hideMainMenu(); openSettings(showMainMenu); },
     onCredits: () => { ui.hideMainMenu(); ui.credits(CREDITS, showMainMenu); },
+    onEndings: () => { ui.hideMainMenu(); ui.endingsMenu(SAVE.loadEndings(), showMainMenu); },
   });
 }
 

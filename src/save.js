@@ -16,6 +16,11 @@ export const loadSave = () => read(SAVE_KEY);
 export const writeSave = (save) => write(SAVE_KEY, save);
 export const clearSave = () => { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ } };
 
+// endings you've seen, kept across playthroughs (separate from the save, which is wiped when you finish)
+const ENDINGS_KEY = 'ashgrove.endings.v1';
+export const loadEndings = () => read(ENDINGS_KEY) || [];
+export const addEnding = (id) => { const e = loadEndings(); if (!e.includes(id)) write(ENDINGS_KEY, [...e, id]); return !e.includes(id); };
+
 export const loadSettings = () => ({ ...DEFAULT_SETTINGS, ...(read(SETTINGS_KEY) || {}) });
 export const writeSettings = (s) => write(SETTINGS_KEY, s);
 

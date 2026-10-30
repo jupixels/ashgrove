@@ -178,6 +178,8 @@ export function createStory(ctx) {
       if (!S().tapes.includes(name)) S().tapes.push(name);
       audio.play('cassette_insert_play', { volume: 0.7 });
       setTimeout(() => voice(name, `Dr. Voss (tape ${S().tapes.length}/${TAPE_COUNT})`, TAPE_LINES[name], 10, 'whisper'), 900);
+      if (S().tapes.length === 1) setTimeout(() => ui.message(`A label on the cassette: "${1} of ${TAPE_COUNT}". Dr. Voss left more of these somewhere.`, 5000), 900 + (len(name, 10) + 1) * 1000);
+      if (S().tapes.length === TAPE_COUNT) setTimeout(() => ui.message('That was the last tape. Whatever he was hiding... get out and you might find out.', 5000), 900 + (len(name, 10) + 1) * 1000);
     } else if (kind === 'keycard') {
       F()[data.key] = true;
       audio.play('keycard_beep', { volume: 0.6 });
@@ -767,7 +769,7 @@ export function createStory(ctx) {
   };
 
   // ---------------------------------------------------------------- endings
-  story.endingCards = (kind) => {
+  story.endingCards = (kind, { isNew = false, found = [] } = {}) => {
     const s = S();
     const secs = Math.round((Date.now() - s.startedAt) / 1000);
     const time = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
@@ -802,6 +804,10 @@ export function createStory(ctx) {
       );
     }
     cards.push([`Tapes found: ${s.tapes.length}/${TAPE_COUNT}\nTimes admitted: ${s.deaths}\nTime: ${time}`, 5]);
+    // how many endings you've seen, and a nudge towards the secret one
+    let tally = `${isNew ? 'New ending unlocked.\n' : ''}Endings found: ${found.length}/3`;
+    if (!found.includes('continuance')) tally += `\n\nThere is a secret ending.\nDr. Voss left ${TAPE_COUNT} tapes in this building.`;
+    cards.push([tally, 5.5]);
     return cards;
   };
 
