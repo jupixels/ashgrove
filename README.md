@@ -52,6 +52,10 @@ Then open http://localhost:8123. Add `?debug` for the debug hooks (`window.game`
 - `tools/clean_sound.py`, `tools/split_steps.py`: tidy ElevenLabs sounds (trim silence, match loudness)
 - `docs/`: design doc, sound prompts, asset list
 
+## Install as an app
+
+In Chrome or Edge, click the install icon in the address bar (on a phone: menu → Add to Home screen). The game then opens full-screen in its own window and keeps working offline once it has loaded. The app files are `manifest.webmanifest`, `sw.js` and `icons/`.
+
 ## Credits
 
 Hospital models: Atomic Realm · Medical props: Retro Assets Library · Textures: Screaming Brain Studios (CC0) ·
