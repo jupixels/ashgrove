@@ -983,7 +983,7 @@ export function buildFloor(key, def, A, opts = {}) {
       }
       const red = floor.emergency && !l.red;
       l.lit = on && !l.red; // (the monster checks this: you're visible standing under a working light)
-      l.light.intensity = on ? (red ? 3 : l.base) : 0;
+      l.light.intensity = on ? (red ? 3 : l.base) * (floor.lightScale || 1) : 0; // (dimmer on Nightmare)
       l.light.color.set(red ? 0xa01818 : l.color);
       l.panelMat.color.set(on ? (red ? 0x902020 : l.panelColor) : 0x111111);
     }

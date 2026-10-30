@@ -68,9 +68,9 @@ applySettings();
 // ---------------------------------------------------------------- saving
 // how hard the monster is: speed, how far it hears, how far it sees. Nightmare also turns off mid-floor saving.
 const DIFFICULTY = {
-  easy: { speed: 0.82, hearing: 0.8, sight: 0.85 },
-  normal: { speed: 1, hearing: 1.2, sight: 1 },
-  nightmare: { speed: 1.22, hearing: 2.2, sight: 1.25 },
+  easy: { speed: 0.82, hearing: 0.8, sight: 0.85, lights: 1, fog: 1, ambient: 1 },
+  normal: { speed: 1, hearing: 1.2, sight: 1, lights: 1, fog: 1, ambient: 1 },
+  nightmare: { speed: 1.22, hearing: 2.2, sight: 1.25, lights: 0.55, fog: 1.5, ambient: 0.5 }, // and darker, foggier
 };
 const nightmare = () => game.save && game.save.difficulty === 'nightmare';
 
@@ -114,6 +114,7 @@ function loadFloor(key, arrive) {
   monster.speedScale = diff.speed * (def.monsterSpeed || 1);
   monster.hearScale = diff.hearing;
   monster.sightScale = diff.sight;
+  floor.lightScale = diff.lights; // Nightmare: the building is darker
   const at = typeof arrive === 'object' && arrive ? arrive : def.arrive[arrive] || Object.values(def.arrive)[0];
   player.spawn(at);
   player.frozen = false;
@@ -468,7 +469,9 @@ function updateFog(dt) {
   if (!f || f.def.outdoor || !scene.fog) return;
   let lit = 0;
   for (const l of f.lights) lit += (l.light.intensity / 7) * Math.max(0, 1 - camera.position.distanceTo(l.light.position) / 9);
-  const want = THREE.MathUtils.lerp(0.11, 0.055, Math.min(1, lit));
+  const d = DIFFICULTY[game.save && game.save.difficulty] || DIFFICULTY.normal;
+  const want = THREE.MathUtils.lerp(0.11, 0.055, Math.min(1, lit)) * d.fog;
+  ambient.intensity = 0.9 * d.ambient;
   fogDensity += (want - fogDensity) * Math.min(1, dt * 0.8);
   scene.fog.density = fogDensity;
 }
