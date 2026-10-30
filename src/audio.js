@@ -92,10 +92,6 @@ const FILES = {
   throw_whoosh: 'sfx/throw_whoosh.mp3',
   vhs_glitch: 'sfx/vhs_glitch.mp3',
   // voice lines still to record in Maya's and Voss's voices (subtitled until then)
-  maya_pro_1: 'voice/maya_pro_1.mp3',
-  maya_pro_2: 'voice/maya_pro_2.mp3',
-  maya_pro_3: 'voice/maya_pro_3.mp3',
-  maya_pro_4: 'voice/maya_pro_4.mp3',
   phone_whisper: 'voice/phone_whisper.mp3',
   voss_final: 'voice/voss_final.mp3',
   metal_shutter_slam: 'scares/metal_shutter_slam.mp3',
