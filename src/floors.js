@@ -263,7 +263,7 @@ export const FLOORS = {
     notes: [
       { title: 'Procedure 31', text: 'Joined patients 9 and 11.\nShared circulation stable.\n\nPatient 11 asked for her mother.\nShe asked in patient 9\'s voice.' },
       { title: 'Records', text: 'Continuance Program summary\n\nPatients enrolled: 14\nPatients discharged: 0\nHeartbeats recorded: 1' },
-      { title: 'A torn page (Dr. Voss\'s handwriting)', text: "I keep forgetting the door code to my office.\nThey change it every time someone new goes missing.\n\nSo I wrote it big, on a wall in one of the rooms up here,\nwhere only cameras can see." },
+      { title: 'A torn page (Dr. Voss\'s handwriting)', text: "I keep forgetting the door code to my office.\nThey change it every time someone new goes missing.\n\nSo I wrote it big, on a wall in one of the rooms up here." },
     ],
     tapes: ['voss_tape_5', 'voss_tape_7'],
   },
