@@ -7,7 +7,7 @@ const EYE = 1.6, CROUCH_EYE = 1.0, RADIUS = 0.3;
 const REACH = 2.4;
 
 export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
-  const flashlight = new THREE.SpotLight(0xfff1d6, 30, 18, 0.42, 0.55, 1.4);
+  const flashlight = new THREE.SpotLight(0xfff1d6, 30, 20, 0.62, 0.92, 1.3); // wide, with a long soft fade out to the edges
   flashlight.castShadow = true;
   flashlight.shadow.mapSize.set(512, 512);
   flashlight.shadow.camera.near = 0.1;
@@ -43,7 +43,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
         vec3 p = position + drift * t + sway;
         p = mod(p - eye + ${(BOX / 2).toFixed(1)}, ${BOX.toFixed(1)}) + eye - ${(BOX / 2).toFixed(1)}; // an endless field around you
         vec3 to = p - eye; float d = length(to);
-        float inBeam = smoothstep(0.86, 0.96, dot(to / d, aim));
+        float inBeam = smoothstep(0.8, 0.95, dot(to / d, aim));
         // it only catches the light as it tumbles: a slow glint, not a steady glow
         float glint = 0.25 + 0.75 * pow(0.5 + 0.5 * sin(t * (1.5 + seed.w * 3.0) + seed.x * 40.0), 3.0);
         vA = inBeam * glint * (1.0 - smoothstep(1.5, 6.0, d)) * smoothstep(0.35, 0.9, d) * strength;

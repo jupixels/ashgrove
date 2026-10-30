@@ -25,12 +25,12 @@ const engine = createEngine();
 const camera = engine.camera;
 const scene = new THREE.Scene();
 scene.add(camera);
-const ambient = new THREE.AmbientLight(0x1a1f1a, 0.35);
+const ambient = new THREE.AmbientLight(0x262c26, 0.9);
 scene.add(ambient);
 function indoors() {
   scene.background = new THREE.Color(0x000000);
-  scene.fog = new THREE.FogExp2(0x020202, 0.11);
-  ambient.intensity = 0.35;
+  scene.fog = new THREE.FogExp2(0x020202, 0.08);
+  ambient.intensity = 0.9; // enough to make out the room around your light
 }
 indoors();
 
@@ -241,6 +241,7 @@ function newGame() {
         startPlaying();
         ui.chapter(CHAPTERS[1].title, 'GROUND FLOOR');
         game.save.flags.card1 = true;
+        setTimeout(() => ui.controlsTip(), 1500); // once you're in control: how to see the controls
         setTimeout(() => ui.objective('Find a way to lift the lockdown.'), 3800);
       },
     });
@@ -299,11 +300,17 @@ controls.addEventListener('unlock', () => {
 
 // ---------------------------------------------------------------- input
 addEventListener('keydown', (e) => {
+  if (e.code === 'Tab') { // hold Tab to see the controls (and never let Tab move focus off the game)
+    e.preventDefault();
+    if (game.state === 'playing') ui.controls(true);
+    return;
+  }
   if (game.state !== 'playing' || game.overlay || !(controls.isLocked || DEBUG)) return;
   if (e.code === 'Space') e.preventDefault();
   player.keyDown(e.code);
 });
-addEventListener('keyup', (e) => player.keyUp(e.code));
+addEventListener('keyup', (e) => { if (e.code === 'Tab') ui.controls(false); player.keyUp(e.code); });
+addEventListener('blur', () => ui.controls(false));
 addEventListener('mousedown', (e) => { if (game.state === 'playing' && controls.isLocked) player.mouseDown(e.button); });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -376,13 +383,13 @@ function castShadows() {
   best.intensity = 0;
 }
 // the air is thick with dust: the fog closes in where the lights are dead and thins out under working ones
-let fogDensity = 0.11;
+let fogDensity = 0.08;
 function updateFog(dt) {
   const f = game.floor;
   if (!f || f.def.outdoor || !scene.fog) return;
   let lit = 0;
   for (const l of f.lights) lit += (l.light.intensity / 7) * Math.max(0, 1 - camera.position.distanceTo(l.light.position) / 9);
-  const want = THREE.MathUtils.lerp(0.16, 0.08, Math.min(1, lit));
+  const want = THREE.MathUtils.lerp(0.11, 0.055, Math.min(1, lit));
   fogDensity += (want - fogDensity) * Math.min(1, dt * 0.8);
   scene.fog.density = fogDensity;
 }

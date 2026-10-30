@@ -25,7 +25,7 @@ export function createUI() {
     hud(on) {
       for (const e of [el.cross, el.keycards]) e.style.display = on ? '' : 'none';
       el.cross.style.display = on ? 'block' : 'none';
-      if (!on) { ui.prompt(''); el.stamina.style.opacity = 0; el.battery.style.opacity = 0; el.breath.style.opacity = 0; }
+      if (!on) { ui.controls(false); ui.prompt(''); el.stamina.style.opacity = 0; el.battery.style.opacity = 0; el.breath.style.opacity = 0; }
     },
     prompt(text) { if (text !== lastPrompt) { el.prompt.textContent = text || ''; lastPrompt = text; } },
     objective(text) {
@@ -56,6 +56,13 @@ export function createUI() {
     hold(p) { el.hold.style.opacity = p > 0 ? 1 : 0; el.holdFill.style.width = Math.min(1, p) * 100 + '%'; },
     keycards(flags) { for (const k in el.kc) el.kc[k].classList.toggle('got', !!flags[k]); },
     locker(on) { el.locker.style.display = on ? 'block' : 'none'; },
+    controls(on) { $('controlsCard').classList.toggle('on', on); if (on) $('controlsTip').classList.remove('on'); },
+    controlsTip(ms = 7000) {
+      const tip = $('controlsTip');
+      tip.classList.add('on');
+      clearTimeout(ui._tipT);
+      ui._tipT = setTimeout(() => tip.classList.remove('on'), ms);
+    },
     phone(on) { el.phone.style.display = on ? 'block' : 'none'; },
     chapter(title, sub) {
       el.chapterTitle.textContent = title;

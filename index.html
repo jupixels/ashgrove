@@ -38,6 +38,18 @@
     #objective { position: fixed; top: 28px; left: 32px; font-size: 18px; opacity: 0; color: #cfc8b2; text-shadow: 0 0 6px #000; max-width: 60vw; }
     #objective.show { animation: objective 7s forwards; }
     #prompt { position: fixed; top: 58%; width: 100%; text-align: center; font-size: 16px; color: #e8e2cf; text-shadow: 0 0 4px #000, 0 0 2px #000; pointer-events: none; z-index: 6; }
+    /* hold Tab: the controls card, and the tip that tells you about it */
+    #controlsCard { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 7; display: none; pointer-events: none;
+      background: rgba(8,8,8,0.88); border: 1px solid rgba(200,195,175,0.35); padding: 22px 30px; color: #cfc8b2; min-width: min(420px, 86vw); box-sizing: border-box; }
+    #controlsCard.on { display: block; }
+    #controlsCard h3 { margin: 0 0 14px; font-weight: normal; letter-spacing: 0.2em; text-align: center; font-size: 18px; }
+    #controlsCard table { width: 100%; border-collapse: collapse; font-size: 16px; }
+    #controlsCard td { padding: 4px 0; }
+    #controlsCard td:first-child { color: #f0e8d0; padding-right: 22px; white-space: nowrap; }
+    #controlsTip { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6; pointer-events: none; padding: 7px 16px; font-size: 17px;
+      background: rgba(0,0,0,0.6); border: 1px solid rgba(200,195,175,0.35); color: #cfc8b2; opacity: 0; transition: opacity 0.8s; }
+    #controlsTip.on { opacity: 1; }
+    #controlsTip b { color: #f0e8d0; font-weight: normal; border: 1px solid #8a846f; padding: 0 6px; margin: 0 4px; }
     #message { position: fixed; bottom: 13%; width: 100%; text-align: center; font-size: clamp(16px, 2vw, 21px); opacity: 0; transition: opacity 0.6s; text-shadow: 0 0 6px #000, 0 0 2px #000; padding: 0 16px; box-sizing: border-box; pointer-events: none; z-index: 6; }
     #message .who { color: #e8b04a; }
     #message .whisper { font-style: italic; color: #b8c8d8; }
@@ -103,20 +115,20 @@
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-      "./src/assets.js": "./src/assets.js?v=77556f539e",
-      "./src/audio.js": "./src/audio.js?v=77556f539e",
-      "./src/cutscene.js": "./src/cutscene.js?v=77556f539e",
-      "./src/engine.js": "./src/engine.js?v=77556f539e",
-      "./src/floors.js": "./src/floors.js?v=77556f539e",
-      "./src/main.js": "./src/main.js?v=77556f539e",
-      "./src/maya.js": "./src/maya.js?v=77556f539e",
-      "./src/monster.js": "./src/monster.js?v=77556f539e",
-      "./src/player.js": "./src/player.js?v=77556f539e",
-      "./src/save.js": "./src/save.js?v=77556f539e",
-      "./src/story.js": "./src/story.js?v=77556f539e",
-      "./src/textures.js": "./src/textures.js?v=77556f539e",
-      "./src/ui.js": "./src/ui.js?v=77556f539e",
-      "./src/world.js": "./src/world.js?v=77556f539e"
+      "./src/assets.js": "./src/assets.js?v=c3c25510e6",
+      "./src/audio.js": "./src/audio.js?v=c3c25510e6",
+      "./src/cutscene.js": "./src/cutscene.js?v=c3c25510e6",
+      "./src/engine.js": "./src/engine.js?v=c3c25510e6",
+      "./src/floors.js": "./src/floors.js?v=c3c25510e6",
+      "./src/main.js": "./src/main.js?v=c3c25510e6",
+      "./src/maya.js": "./src/maya.js?v=c3c25510e6",
+      "./src/monster.js": "./src/monster.js?v=c3c25510e6",
+      "./src/player.js": "./src/player.js?v=c3c25510e6",
+      "./src/save.js": "./src/save.js?v=c3c25510e6",
+      "./src/story.js": "./src/story.js?v=c3c25510e6",
+      "./src/textures.js": "./src/textures.js?v=c3c25510e6",
+      "./src/ui.js": "./src/ui.js?v=c3c25510e6",
+      "./src/world.js": "./src/world.js?v=c3c25510e6"
     }
   }
   </script>
@@ -134,7 +146,7 @@
       <button id="btnCredits">Credits</button>
     </div>
     <div class="small">
-      WASD move · Mouse look · Shift run · C crouch · F flashlight · E use / hide · Space hold breath (hidden) · Right-click or Q phone camera · Esc pause<br><br>
+      WASD move · Mouse look · Shift run · C crouch · F flashlight · E use / hide · Space hold breath (hidden) · Right-click or Q phone camera · Tab controls · Esc pause<br><br>
       Headphones strongly recommended. Contains blood, jumpscares and flashing lights.
     </div>
     <div class="credits-line">
@@ -194,6 +206,21 @@
   <div id="objective"></div>
   <div id="prompt"></div>
   <div id="message"></div>
+  <div id="controlsTip">Press <b>Tab</b> for controls</div>
+  <div id="controlsCard">
+    <h3>CONTROLS</h3>
+    <table>
+      <tr><td>W A S D</td><td>Move</td></tr>
+      <tr><td>Mouse</td><td>Look</td></tr>
+      <tr><td>Shift</td><td>Run</td></tr>
+      <tr><td>C</td><td>Crouch (quiet)</td></tr>
+      <tr><td>F</td><td>Flashlight on / off</td></tr>
+      <tr><td>E</td><td>Use, open, read, hide in a locker</td></tr>
+      <tr><td>Space</td><td>Hold your breath (in a locker)</td></tr>
+      <tr><td>Q / Right-click</td><td>Phone camera</td></tr>
+      <tr><td>Esc</td><td>Pause</td></tr>
+    </table>
+  </div>
   <div id="crosshair"></div>
   <div id="battery"><div id="batteryFill"></div></div>
   <div id="stamina"><div id="staminaFill"></div></div>
@@ -221,6 +248,6 @@
     <div id="skip">hold SPACE to skip</div>
   </div>
 
-  <script type="module" src="src/main.js?v=77556f539e"></script>
+  <script type="module" src="src/main.js?v=c3c25510e6"></script>
 </body>
 </html>
