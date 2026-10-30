@@ -385,10 +385,10 @@ export function createStory(ctx) {
         scare(0.8);
         ui.message("It's not Maya. It's her shirt, stretched over... something.", 3500);
         await w(1.6);
-        // it drops through the ceiling behind you
+        // it drops through the ceiling right beside the stalls, at the other end of the row from you
         audio.play('monster_ceiling_burst', { volume: 1 });
         monster.mode = 'script';
-        const spot = aheadOf(-3.2);
+        const spot = cellPos(41, 11).add(V(0.3, 0, -0.2)); // in front of the first stall
         monster.show(spot, player.position);
         monster.anim('roar', { fade: 0.05, once: true });
         for (let i = 0; i <= 8; i++) { monster.group.position.y = 2.6 * (1 - i / 8); await w(0.03); }
