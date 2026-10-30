@@ -81,6 +81,8 @@ export function createStory(ctx) {
   // Dr. Voss's door code: four random digits, new every game
   const doorCode = () => (F().doorCode ||= String(Math.floor(Math.random() * 10000)).padStart(4, '0'));
   story.doorCode = doorCode;
+  // 4F once Maya is free: no autosaving until you reach the roof, so dying puts you back before you cut her loose
+  story.noSave = () => !!floor() && floor().key === 'F4' && !!F().mayaFreed;
   const keycardCount = () => ['red', 'blue', 'black'].filter((k) => F()[k]).length;
 
   // ---------------------------------------------------------------- arriving on a floor
@@ -455,6 +457,7 @@ export function createStory(ctx) {
       o.freed = true;
       F().mayaFreed = true;
       stopLoop('stitching_sound');
+      if (o.straps) o.straps.visible = false; // cut
       scene(async (w) => {
         voice('sam_found_maya', 'Sam', "Maya! I'm here, I've got you. Hold still.", 2.5);
         maya.group.rotation.set(0, 0, 0);
@@ -469,7 +472,6 @@ export function createStory(ctx) {
         monster.startAI({ at: monster.mode === 'ai' ? monster.group.position.clone() : undefined, avoid: player.position, state: 'chase' });
         monster.lastSeen = player.position.clone();
         objective('Get Maya to the roof! The stairs at the far end of the ward.');
-        ctx.checkpoint({ x: player.position.x, z: player.position.z, yaw: player.yaw() }); // die after this and you're back here, with her
       });
     },
     fireEscape() {
@@ -501,10 +503,31 @@ export function createStory(ctx) {
   function placeMayaOnTable() {
     const o = floor().objects.mayaTable;
     maya.group.visible = true;
-    maya.group.position.copy(o.pos).setY(0.92);
+    // she's placed by her feet and lies head-first along -z: feet at one end of the table, head at the other
+    maya.group.position.copy(o.pos).setY(0.92).add(V(0, 0, 0.8));
     maya.group.rotation.set(-Math.PI / 2, 0, 0);
     maya.play('idle');
     mayaFollowing = false;
+    // leather straps across her chest, hips and legs
+    if (!o.straps) {
+      o.straps = new THREE.Group();
+      const leather = new THREE.MeshLambertMaterial({ color: 0x2a1c12 }), buckle = new THREE.MeshLambertMaterial({ color: 0x8a8a80 });
+      for (const dz of [-0.5, 0.05, 0.55]) {
+        const s = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.035, 0.09), leather);
+        s.position.set(0, 1.1, dz);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.1), buckle);
+        b.position.set(0.32, 1.12, dz);
+        for (const side of [-1, 1]) { // down the sides of the table
+          const d = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.28, 0.09), leather);
+          d.position.set(side * 0.48, 0.97, dz);
+          o.straps.add(d);
+        }
+        o.straps.add(s, b);
+      }
+      o.straps.position.set(o.pos.x, 0, o.pos.z);
+      floor().group.add(o.straps);
+    }
+    o.straps.visible = true;
   }
   // a clear spot a step behind you (or beside you), for Maya to appear without standing inside you
   function besidePlayer() {

@@ -86,7 +86,7 @@ function persist() {
 
 // autosave every few seconds, whenever nothing is mid-way through happening
 let autosaveT = 0;
-const calm = () => game.state === 'playing' && !player.frozen && !story.busy() && !(monster.mode === 'ai' && monster.state === 'chase');
+const calm = () => game.state === 'playing' && !player.frozen && !story.busy() && !story.noSave() && !(monster.mode === 'ai' && monster.state === 'chase');
 function autosave(dt) {
   autosaveT += dt;
   if (autosaveT < 5 || !calm()) return;
