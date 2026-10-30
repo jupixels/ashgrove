@@ -170,3 +170,28 @@ Use **Text to Speech** (not Sound Effects) for these. For the PA, use a calm old
 |----------|------|
 | `sam_found_maya.mp3` | "Maya! I'm here, I've got you. Hold still." (whispered, urgent) |
 | `sam_run.mp3` | "RUN! Up the stairs, GO!" (screamed) |
+
+## 8. New lines to record (subtitled in the game until you add them) → `voice/`
+
+Use the same voices you used for Maya and Dr. Voss. Drop the files into `assets/audio/voice/` with these names and tell me, and I'll level them.
+
+**The prologue: Maya alone, the night before** (her phone light, whispering to her camera, nervous but excited)
+
+| File | Line |
+|---|---|
+| `maya_pro_1.mp3` | "Okay. Ashgrove Memorial, night one. Nobody's been in here since ninety-seven." (quiet, vlogging to her phone) |
+| `maya_pro_2.mp3` | "Perfect. And... rolling." (setting the camera down, pleased) |
+| `maya_pro_3.mp3` | "...Hello? Is someone there?" (frightened, small voice, echoing hallway) |
+| `maya_pro_4.mp3` | "Nope. Nope nope nope." (backing away, panicked whisper) |
+
+**The ringing phone** (could be Maya, could be the monster mimicking her: over a bad phone line)
+
+| File | Line |
+|---|---|
+| `phone_whisper.mp3` | "...Sam?... ...it's so cold up here..." (weak, whispered, phone-line crackle) |
+
+**The hidden ending: Dr. Voss's final entry** (calm, tired, an old man confessing into a tape recorder)
+
+| File | Line |
+|---|---|
+| `voss_final.mp3` | "Final entry. Whoever has collected these: you deserve to know what I did. My daughter died on the fourth floor in 1989. Her heart stopped, and I could not start it again. So I built a body that cannot stop. I called it the Continuance. It does not die. It only grows. It doesn't kill the people it takes. It keeps them. I'm in there too. Some nights I can still hear her music box." |

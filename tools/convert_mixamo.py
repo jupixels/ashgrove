@@ -106,3 +106,5 @@ bpy.ops.export_scene.gltf(
     export_jpeg_quality=80,
 )
 print('WROTE', out, os.path.getsize(out))
+# Then shrink it for the web (meshopt geometry + WebP textures, ~800 KB), which the game's loader expects:
+#   npx @gltf-transform/cli optimize OUT.glb OUT.glb --compress meshopt --texture-compress webp --texture-size 512 --simplify false

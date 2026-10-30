@@ -522,7 +522,7 @@ function updateMenuView(dt, t) {
     view.camera = camera;
   }
 }
-ui.onGlitch = () => { fx.aberration = Math.max(fx.aberration, 1.2); };
+ui.onGlitch = () => { fx.aberration = Math.max(fx.aberration, 1.2); if (audio.ctx) audio.play('vhs_glitch', { volume: 0.35 }); };
 
 function frame() {
   requestAnimationFrame(frame);

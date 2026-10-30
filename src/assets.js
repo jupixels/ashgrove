@@ -1,6 +1,7 @@
 // Loads models and textures from assets/. Everything here is game-ready (converted from assets/raw).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'; // the characters are meshopt-compressed (~800 KB instead of ~3 MB)
 
 // this build's version ("?v=...", stamped by tools/stamp_version.py) so updated files are never served from cache
 export const VERSION = new URL(import.meta.url).search;
@@ -77,7 +78,8 @@ function composeWall(img) {
 }
 
 export async function loadAssets(onProgress) {
-  const gltf = new GLTFLoader();
+  const gltf = new GLTFLoader()
+  gltf.setMeshoptDecoder(MeshoptDecoder);
   let done = 0;
   const total = Object.keys(MODELS).length + Object.keys(IMAGES).length;
   const tick = () => onProgress && onProgress(++done / total);
