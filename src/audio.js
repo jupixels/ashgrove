@@ -301,6 +301,10 @@ export class GameAudio {
     battery_insert(v) { this.noiseBurst(v * 0.5, 2500, 4, 0.001, 0.04); setTimeout(() => this.noiseBurst(v * 0.5, 2000, 4, 0.001, 0.05), 120); },
     keycard_beep(v) { this.tone('square', 1200, 1200, v * 0.15, 0.12); },
     flicker(v) { this.noiseBurst(v * 0.35, 4000, 1, 0.002, 0.06, 'highpass'); },
+    // placeholders until recorded: throwing things
+    throw_whoosh(v) { this.noiseBurst(v * 0.4, 900, 0.7, 0.05, 0.25); },
+    bottle_smash(v) { for (let i = 0; i < 6; i++) setTimeout(() => this.noiseBurst(v * 0.7, 4500 + Math.random() * 3500, 3, 0.001, 0.12 + Math.random() * 0.2), i * 25); },
+    brick_thud(v) { this.tone('sine', 110, 50, v * 0.8, 0.18); this.noiseBurst(v * 0.4, 500, 1, 0.002, 0.15); },
     heartbeat(v) { this.tone('sine', 70, 40, v * 0.9, 0.15); setTimeout(() => this.tone('sine', 60, 35, v * 0.6, 0.15), 180); },
     monster_growl_distant(v) {
       const t = this.ctx.currentTime;

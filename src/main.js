@@ -58,10 +58,18 @@ function applySettings() {
 applySettings();
 
 // ---------------------------------------------------------------- saving
+// how hard the monster is: speed, how far it hears, how far it sees. Nightmare also turns off mid-floor saving.
+const DIFFICULTY = {
+  easy: { speed: 0.82, hearing: 0.75, sight: 0.8 },
+  normal: { speed: 1, hearing: 1, sight: 1 },
+  nightmare: { speed: 1.22, hearing: 1.3, sight: 1.2 },
+};
+const nightmare = () => game.save && game.save.difficulty === 'nightmare';
+
 function persist() {
   game.save.taken = [...game.taken];
   // where you are right now, so Continue puts you back on the exact spot (dying still goes back to the checkpoint)
-  if (game.state === 'playing' && game.floor && !story.dying) {
+  if (game.state === 'playing' && game.floor && !story.dying && !nightmare()) {
     const pos = player.hidden ? player.hidden.outside : camera.position;
     game.save.resume = { floor: game.floor.key, x: pos.x, z: pos.z, yaw: camera.rotation.y, battery: player.battery };
   }
@@ -87,11 +95,17 @@ function loadFloor(key, arrive) {
   if (game.floor) { scene.remove(game.floor.group); game.floor.dispose(); }
   const def = FLOORS[key];
   const floor = buildFloor(key, def, A, { taken: game.taken, lessGore: settings.lessGore, powered: !!game.save.flags.power });
+  floor.onTake = (kind) => player.addThrowable(kind);
   floor.onSound = (name, pos, vol) => audio.play(name, { pos, volume: vol * THREE.MathUtils.clamp(1 - camera.position.distanceTo(pos) / 25, 0.1, 1) });
   scene.add(floor.group);
   if (def.outdoor) { scene.fog = new THREE.FogExp2(0x4a3a4a, 0.02); ambient.intensity = 1.6; } else indoors();
   game.floor = floor;
   player.setFloor(floor);
+  // the monster for this floor: the difficulty you started on, and a little faster the higher you go
+  const diff = DIFFICULTY[game.save.difficulty] || DIFFICULTY.normal;
+  monster.speedScale = diff.speed * (def.monsterSpeed || 1);
+  monster.hearScale = diff.hearing;
+  monster.sightScale = diff.sight;
   const at = typeof arrive === 'object' && arrive ? arrive : def.arrive[arrive] || Object.values(def.arrive)[0];
   player.spawn(at);
   player.frozen = false;
@@ -133,7 +147,8 @@ const ctx = {
     controls.unlock();
     open(() => { game.overlay = false; controls.lock(); });
   },
-  checkpoint(pos) { game.save.floor = game.floor.key; if (pos) game.save.checkpoint = pos; persist(); },
+  checkpoint(pos) { if (nightmare()) return; game.save.floor = game.floor.key; if (pos) game.save.checkpoint = pos; persist(); },
+  get nightmare() { return nightmare(); },
   saveTaken(id) { game.taken.add(id); },
   changeFloor,
   noise: (pos, r) => monster.hear(pos, r),
@@ -215,7 +230,10 @@ async function ensureAudio() {
 function newGame() {
   ensureAudio().then(() => {
     game.save = SAVE.newSave();
+    game.save.difficulty = settings.difficulty || 'normal';
     game.taken = new Set();
+    player.carry.length = 0;
+    ui.carry([]);
     persist();
     resetFx();
     story.reset();
@@ -282,7 +300,8 @@ function openSettings(back) {
 function pauseStats() {
   const s = game.save;
   const keys = ['red', 'blue', 'black'].filter((k) => s.flags[k]).length;
-  return `${CHAPTERS[s.chapter].title} · Tapes ${s.tapes.length}/${TAPE_COUNT} · Keycards ${keys}/3\n${s.objective || ''}`;
+  const diff = { easy: 'Easy', normal: 'Normal', nightmare: 'Nightmare' }[s.difficulty || 'normal'];
+  return `${CHAPTERS[s.chapter].title} · ${diff} · Tapes ${s.tapes.length}/${TAPE_COUNT} · Keycards ${keys}/3\n${s.objective || ''}`;
 }
 function showPause() {
   ui.pauseMenu(true, {
@@ -312,7 +331,7 @@ addEventListener('keydown', (e) => {
 });
 addEventListener('keyup', (e) => { if (e.code === 'Tab') ui.controls(false); player.keyUp(e.code); });
 addEventListener('blur', () => ui.controls(false));
-addEventListener('mousedown', (e) => { if (game.state === 'playing' && controls.isLocked) player.mouseDown(e.button); });
+addEventListener('mousedown', (e) => { if (game.state === 'playing' && controls.isLocked && !game.overlay) player.mouseDown(e.button); });
 addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ---------------------------------------------------------------- dread: heartbeat and distortion when it's close

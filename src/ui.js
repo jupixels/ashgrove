@@ -55,7 +55,17 @@ export function createUI() {
     },
     hold(p) { el.hold.style.opacity = p > 0 ? 1 : 0; el.holdFill.style.width = Math.min(1, p) * 100 + '%'; },
     keycards(flags) { for (const k in el.kc) el.kc[k].classList.toggle('got', !!flags[k]); },
-    locker(on) { el.locker.style.display = on ? 'block' : 'none'; },
+    locker(on) { ui.hideView(on ? 'locker' : null); },
+    // what you see from a hiding place: 'locker', 'bed', or null
+    hideView(kind) { el.locker.style.display = kind === 'locker' ? 'block' : 'none'; $('bedview').style.display = kind === 'bed' ? 'block' : 'none'; },
+    // bottles and bricks you're carrying
+    carry(list) {
+      const c = $('carry');
+      const n = (k) => list.filter((x) => x === k).length;
+      const parts = [n('bottle') && `Bottle ×${n('bottle')}`, n('brick') && `Brick ×${n('brick')}`].filter(Boolean);
+      c.innerHTML = parts.length ? `${parts.join('   ')}<small>[G / Left-click] throw</small>` : '';
+      c.classList.toggle('on', parts.length > 0);
+    },
     controls(on) { $('controlsCard').classList.toggle('on', on); if (on) $('controlsTip').classList.remove('on'); },
     controlsTip(ms = 7000) {
       const tip = $('controlsTip');
@@ -94,13 +104,23 @@ export function createUI() {
     },
     settingsMenu(settings, onChange, onBack) {
       show(el.settings, true);
-      const sens = $('setSens'), vol = $('setVol'), gore = $('setGore'), flash = $('setFlash');
+      const sens = $('setSens'), vol = $('setVol'), gore = $('setGore'), flash = $('setFlash'), diff = $('setDiff');
+      const DIFF_NOTE = {
+        easy: 'A slower monster that hears and sees less.',
+        normal: 'The way it was meant to be played.',
+        nightmare: 'A faster monster with sharper senses. No saving mid-floor: payphones are dead, and dying sends you back to when you reached the floor.',
+      };
+      diff.value = settings.difficulty || 'normal';
+      $('diffNote').textContent = DIFF_NOTE[diff.value];
       sens.value = settings.sensitivity;
       vol.value = settings.volume;
       gore.checked = settings.lessGore;
       flash.checked = settings.reduceFlashing;
-      const changed = () => onChange({ sensitivity: +sens.value, volume: +vol.value, lessGore: gore.checked, reduceFlashing: flash.checked });
-      sens.oninput = vol.oninput = gore.onchange = flash.onchange = changed;
+      const changed = () => {
+        $('diffNote').textContent = DIFF_NOTE[diff.value];
+        onChange({ sensitivity: +sens.value, volume: +vol.value, lessGore: gore.checked, reduceFlashing: flash.checked, difficulty: diff.value });
+      };
+      sens.oninput = vol.oninput = gore.onchange = flash.onchange = diff.onchange = changed;
       $('btnSettingsBack').onclick = () => { show(el.settings, false); onBack(); };
     },
     note(title, text, onClose) {

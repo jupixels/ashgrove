@@ -198,6 +198,7 @@ export function createStory(ctx) {
     }
     if (kind === 'locker') { player.hide(data); return; }
     if (kind === 'payphone') {
+      if (ctx.nightmare) { audio.play('walkie_static', { volume: 0.1 }); ui.message('The line is dead. (No saving on Nightmare.)', 3000); return; }
       audio.play('walkie_static', { volume: 0.15 });
       ctx.checkpoint({ x: player.position.x, z: player.position.z, yaw: player.yaw() });
       ui.message('No dial tone. Just breathing on the line... (progress saved)', 3500);

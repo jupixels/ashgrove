@@ -51,6 +51,14 @@
       background: rgba(0,0,0,0.6); border: 1px solid rgba(200,195,175,0.35); color: #cfc8b2; opacity: 0; transition: opacity 0.8s; }
     #controlsTip.on { opacity: 1; }
     #controlsTip b { color: #f0e8d0; font-weight: normal; border: 1px solid #8a846f; padding: 0 6px; margin: 0 4px; }
+    /* under a bed: the mattress above you, the floor stretching away */
+    #bedview { position: fixed; inset: 0; pointer-events: none; z-index: 1; display: none;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.97) 0, rgba(0,0,0,0.92) 34%, rgba(0,0,0,0.2) 46%, transparent 52%, transparent 88%, rgba(0,0,0,0.6) 100%); }
+    #bedview::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.85) 0, transparent 14%, transparent 86%, rgba(0,0,0,0.85) 100%); }
+    /* what you're carrying to throw */
+    #carry { position: fixed; bottom: 26px; left: 30px; z-index: 2; font-size: 15px; color: #cfc8b2; text-shadow: 0 0 4px #000; opacity: 0; transition: opacity 0.4s; pointer-events: none; }
+    #carry.on { opacity: 1; }
+    #carry small { color: #8a846f; margin-left: 8px; }
     #message { position: fixed; bottom: 13%; width: 100%; text-align: center; font-size: clamp(16px, 2vw, 21px); opacity: 0; transition: opacity 0.6s; text-shadow: 0 0 6px #000, 0 0 2px #000; padding: 0 16px; box-sizing: border-box; pointer-events: none; z-index: 6; }
     #message .who { color: #e8b04a; }
     #message .whisper { font-style: italic; color: #b8c8d8; }
@@ -116,20 +124,20 @@
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-      "./src/assets.js": "./src/assets.js?v=ab2d303f4d",
-      "./src/audio.js": "./src/audio.js?v=ab2d303f4d",
-      "./src/cutscene.js": "./src/cutscene.js?v=ab2d303f4d",
-      "./src/engine.js": "./src/engine.js?v=ab2d303f4d",
-      "./src/floors.js": "./src/floors.js?v=ab2d303f4d",
-      "./src/main.js": "./src/main.js?v=ab2d303f4d",
-      "./src/maya.js": "./src/maya.js?v=ab2d303f4d",
-      "./src/monster.js": "./src/monster.js?v=ab2d303f4d",
-      "./src/player.js": "./src/player.js?v=ab2d303f4d",
-      "./src/save.js": "./src/save.js?v=ab2d303f4d",
-      "./src/story.js": "./src/story.js?v=ab2d303f4d",
-      "./src/textures.js": "./src/textures.js?v=ab2d303f4d",
-      "./src/ui.js": "./src/ui.js?v=ab2d303f4d",
-      "./src/world.js": "./src/world.js?v=ab2d303f4d"
+      "./src/assets.js": "./src/assets.js?v=4219ac0433",
+      "./src/audio.js": "./src/audio.js?v=4219ac0433",
+      "./src/cutscene.js": "./src/cutscene.js?v=4219ac0433",
+      "./src/engine.js": "./src/engine.js?v=4219ac0433",
+      "./src/floors.js": "./src/floors.js?v=4219ac0433",
+      "./src/main.js": "./src/main.js?v=4219ac0433",
+      "./src/maya.js": "./src/maya.js?v=4219ac0433",
+      "./src/monster.js": "./src/monster.js?v=4219ac0433",
+      "./src/player.js": "./src/player.js?v=4219ac0433",
+      "./src/save.js": "./src/save.js?v=4219ac0433",
+      "./src/story.js": "./src/story.js?v=4219ac0433",
+      "./src/textures.js": "./src/textures.js?v=4219ac0433",
+      "./src/ui.js": "./src/ui.js?v=4219ac0433",
+      "./src/world.js": "./src/world.js?v=4219ac0433"
     }
   }
   </script>
@@ -147,7 +155,7 @@
       <button id="btnCredits">Credits</button>
     </div>
     <div class="small">
-      WASD move · Mouse look · Shift run · C crouch · F flashlight · E use / hide · Space hold breath (hidden) · Right-click or Q phone camera · Tab controls · Esc pause<br><br>
+      WASD move · Mouse look · Shift run · C crouch · F flashlight · E use / hide · Q/E lean · G or Left-click throw · Space hold breath (hidden) · R or Right-click phone camera · Tab controls · Esc pause<br><br>
       Headphones strongly recommended. Contains blood, jumpscares and flashing lights.
     </div>
     <div class="credits-line">
@@ -170,6 +178,8 @@
     <h2 style="letter-spacing:0.3em">SETTINGS</h2>
     <label>Mouse sensitivity <input type="range" id="setSens" min="0.3" max="2.5" step="0.05"></label>
     <label>Volume <input type="range" id="setVol" min="0" max="1" step="0.05"></label>
+    <label>Difficulty (new games) <select id="setDiff"><option value="easy">Easy</option><option value="normal">Normal</option><option value="nightmare">Nightmare</option></select></label>
+    <div id="diffNote" class="small" style="max-width:420px;margin:-4px auto 10px;opacity:0.75"></div>
     <label>Less gore <input type="checkbox" id="setGore"></label>
     <label>Reduce flashing lights <input type="checkbox" id="setFlash"></label>
     <div class="menu" style="margin-top:20px"><button id="btnSettingsBack">Back</button></div>
@@ -207,6 +217,8 @@
   <div id="objective"></div>
   <div id="prompt"></div>
   <div id="message"></div>
+  <div id="bedview"></div>
+  <div id="carry"></div>
   <div id="controlsTip">Press <b>Tab</b> for controls</div>
   <div id="controlsCard">
     <h3>CONTROLS</h3>
@@ -216,9 +228,11 @@
       <tr><td>Shift</td><td>Run</td></tr>
       <tr><td>C</td><td>Crouch (quiet)</td></tr>
       <tr><td>F</td><td>Flashlight on / off</td></tr>
-      <tr><td>E</td><td>Use, open, read, hide in a locker</td></tr>
-      <tr><td>Space</td><td>Hold your breath (in a locker)</td></tr>
-      <tr><td>Q / Right-click</td><td>Phone camera</td></tr>
+      <tr><td>E</td><td>Use, open, read, hide (locker or under a bed)</td></tr>
+      <tr><td>Q / E</td><td>Lean left / right round a corner (E leans when there's nothing to use)</td></tr>
+      <tr><td>G / Left-click</td><td>Throw a bottle or brick (it draws the monster to the noise)</td></tr>
+      <tr><td>Space</td><td>Hold your breath (while hiding)</td></tr>
+      <tr><td>R / Right-click</td><td>Phone camera</td></tr>
       <tr><td>Esc</td><td>Pause</td></tr>
     </table>
   </div>
@@ -249,6 +263,6 @@
     <div id="skip">hold SPACE to skip</div>
   </div>
 
-  <script type="module" src="src/main.js?v=ab2d303f4d"></script>
+  <script type="module" src="src/main.js?v=4219ac0433"></script>
 </body>
 </html>

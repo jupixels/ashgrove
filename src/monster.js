@@ -70,7 +70,8 @@ export function createMonster({ A, scene, audio }) {
     path: [], repath: 0,
     target: null, lastSeen: null, lostT: 0, searchT: 0, stunT: 0, stunCooldown: 0,
     suspicion: 0, sawHide: false, stepT: 0, growlT: 0,
-    speedScale: 1,
+    speedScale: 1, hearScale: 1, sightScale: 1,   // set per floor and difficulty
+    route: 0, routeI: 0,                          // which patrol route it's walking, and where along it
   };
   const tmp = new THREE.Vector3();
 
@@ -98,6 +99,8 @@ export function createMonster({ A, scene, audio }) {
     m.suspicion = 0;
     m.sawHide = false;
     m.heardBreath = false;
+    m.route = Math.floor(Math.random() * 2); // start on either patrol route
+    m.routeI = 0;
     if (state === 'chase') anim('run');
     else anim('walk');
   };
@@ -123,7 +126,7 @@ export function createMonster({ A, scene, audio }) {
   // somebody made a noise of this loudness (metres it carries)
   m.hear = (pos, radius) => {
     if (m.mode !== 'ai' || m.state === 'chase' || m.state === 'stunned') return;
-    if (m.distanceTo(pos) > radius) return;
+    if (m.distanceTo(pos) > radius * m.hearScale) return;
     m.state = 'investigate';
     m.target = pos.clone();
     m.path = [];
@@ -167,8 +170,8 @@ export function createMonster({ A, scene, audio }) {
     const toPlayer = pp.clone().setY(0).sub(group.position.clone().setY(0)).normalize();
     const facing = new THREE.Vector3(Math.sin(group.rotation.y), 0, Math.cos(group.rotation.y));
     const inView = facing.dot(toPlayer) > 0.35 || dist < 3;
-    const lit = player.flashOn || dist < 7;
-    const sees = !player.hidden && dist < 18 && inView && lit && f.los(eye, pp);
+    const lit = player.flashOn || dist < 7 * m.sightScale;
+    const sees = !player.hidden && dist < 18 * m.sightScale && inView && lit && f.los(eye, pp);
 
     if (m.state === 'stunned') {
       m.stunT -= dt;
@@ -206,8 +209,16 @@ export function createMonster({ A, scene, audio }) {
       if (m.searchT <= 0) { m.state = 'patrol'; m.target = null; m.path = []; }
     } else { // patrol
       if (!m.target || m.distanceTo(m.target) < 0.8) {
-        const pts = f.waypoints.filter((w) => w.distanceTo(group.position) > 3);
-        m.target = (pts.length ? pts : f.waypoints)[Math.floor(Math.random() * (pts.length || f.waypoints.length))].clone();
+        const routes = (f.def.routes || []).map((r) => r.map((n) => f.wp[n]).filter(Boolean)).filter((r) => r.length);
+        if (routes.length) {
+          // two patrol routes (the front corridor and the back): walk one, then usually switch to the other
+          if (m.target) m.routeI++;
+          if (m.routeI >= routes[m.route % routes.length].length) { m.routeI = 0; if (Math.random() < 0.7) m.route++; }
+          m.target = routes[m.route % routes.length][m.routeI].clone();
+        } else {
+          const pts = f.waypoints.filter((w) => w.distanceTo(group.position) > 3);
+          m.target = (pts.length ? pts : f.waypoints)[Math.floor(Math.random() * (pts.length || f.waypoints.length))].clone();
+        }
         m.path = [];
       }
       goTo(m.target, SPEED.patrol, dt);

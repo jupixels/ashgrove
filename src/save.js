@@ -3,7 +3,7 @@
 const SAVE_KEY = 'ashgrove.save.v1';
 const SETTINGS_KEY = 'ashgrove.settings.v1';
 
-export const DEFAULT_SETTINGS = { sensitivity: 1, volume: 0.9, lessGore: false, reduceFlashing: false };
+export const DEFAULT_SETTINGS = { sensitivity: 1, volume: 0.9, lessGore: false, reduceFlashing: false, difficulty: 'normal' };
 
 function read(key) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; }

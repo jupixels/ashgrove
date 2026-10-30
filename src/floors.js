@@ -218,13 +218,15 @@ export const FLOORS = {
     notes: [
       { title: 'Maintenance notice', text: 'If main power fails: reset the breaker lever in the BOILER ROOM.\n\nIt is loud. Do not do it alone.' },
       { title: 'Morgue intake', text: '10/29/97 — Dr. A. Harlan (Director).\nCause of death: [scratched out]\n\nPersonal effects: RED keycard, wedding ring.\nEffects left with the body, per Dr. Voss.' },
-      { title: 'Scrawled on a clipboard', text: 'it follows SOUND.\n\nwalk. dont run. dont knock anything over.\nhide in the lockers and HOLD YOUR BREATH (Space).\n\nyour light wont stop it. nothing will.' },
+      { title: 'Scrawled on a clipboard', text: 'it follows SOUND.\n\nwalk. dont run. dont knock anything over.\nhide in the lockers or under the beds and HOLD YOUR BREATH (Space).\n\nyour light wont stop it. nothing will.' },
     ],
     tapes: ['voss_tape_2', 'voss_tape_3'],
   },
   F2: {
     name: 'Pediatrics',
     map: F2.rows(),
+    monsterSpeed: 1.05,
+    routes: [[1, 2, 3, 2], [6, 7, 8, 5, 8, 7, 4]], // the front corridor, and the nurse station / back corridor / rooms
     signs: { '7,3': 'ROOM 201', '15,3': 'ROOM 202', '23,3': 'ROOM 203', '31,3': 'STAFF ONLY', '9,6': 'PLAYROOM', '27,6': 'WARD B', '33,6': 'WARD B' },
     ambience: 'pediatrics_ambience',
     keycard: 'blue',
@@ -246,6 +248,8 @@ export const FLOORS = {
   F3: {
     name: 'Surgery & ICU',
     map: F3.rows(),
+    monsterSpeed: 1.1,
+    routes: [[1, 2, 3, 2], [4, 7, 8, 6, 5, 8, 7]],
     signs: { '8,3': 'SURGERY 1', '17,3': 'SURGERY 2', '8,6': 'ICU', '16,6': 'ICU', '24,6': 'STORAGE', '33,6': 'RECORDS' },
     keycard: 'black',
     ambience: 'fluorescent_buzz',
@@ -267,6 +271,8 @@ export const FLOORS = {
   F4: {
     name: 'Ward C',
     map: F4.rows(),
+    monsterSpeed: 1.15,
+    routes: [[1, 2, 3, 2], [5, 7, 6, 8, 6, 4, 7]],
     signs: { '8,3': 'WARD C1', '18,3': 'WARD C2', '7,6': 'WARD C3', '27,6': 'WARD C4', '17,6': 'THEATRE' },
     ambience: 'hospital_drone',
     arrive: { fromBelow: cell(2, 5, yawEast) },
@@ -295,6 +301,44 @@ export const FLOORS = {
 };
 
 // Chapter titles shown when you first arrive somewhere
+// Lockers at the turns: wherever a side hallway or an open gap meets a corridor, put a locker against the wall
+// right beside the opening, so there's always somewhere to duck into as you come round a corner. Deterministic
+// (the same every time), spaced out, and only on plain floor that nothing else is using.
+function addCornerLockers(def) {
+  const rows = def.map.map((r) => r.split(''));
+  const at = (x, z) => (rows[z] && rows[z][x]) || '#';
+  const walk = (x, z) => !'# '.includes(at(x, z));
+  const busy = new Set((def.objects || []).flatMap((o) => Array.from({ length: o.rows || 1 }, (_, i) => `${o.x},${o.z + i}`)));
+  const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+  const near = (x, z, r, chars) => {
+    for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (chars.includes(at(x + dx, z + dz))) return true;
+    return false;
+  };
+  const free = (x, z) => at(x, z) === '.' && !busy.has(`${x},${z}`) && !near(x, z, 1, 'D^vQ') && !near(x, z, 3, 'H');
+  let added = 0;
+  for (let z = 1; z < rows.length - 1; z++) for (let x = 1; x < rows[0].length - 1; x++) {
+    if (added >= 6 || !walk(x, z) || at(x, z) === 'D') continue;
+    for (const [dx, dz] of DIRS) {
+      // (x+dx, z+dz) is the mouth of a 1-wide passage opening off this cell (walls on both sides of it)
+      const mx = x + dx, mz = z + dz;
+      if (!walk(mx, mz) || at(mx, mz) === 'D') continue;
+      const narrow = dx ? !walk(mx, mz - 1) && !walk(mx, mz + 1) : !walk(mx - 1, mz) && !walk(mx + 1, mz);
+      if (!narrow) continue;
+      // only on the corridor side (2 cells deep or less), not just inside a room
+      let depth = 0;
+      while (walk(x - dx * depth, z - dz * depth) && depth < 4) depth++;
+      if (depth > 2) continue;
+      // beside the opening, against the wall it's cut into
+      for (const s of [1, -1]) {
+        const cx = x + (dx ? 0 : s), cz = z + (dz ? 0 : s);
+        if (!walk(cx + dx, cz + dz) && free(cx, cz)) { rows[cz][cx] = 'H'; added++; break; }
+      }
+    }
+  }
+  return rows.map((r) => r.join(''));
+}
+for (const def of Object.values(FLOORS)) if (!def.outdoor) def.map = addCornerLockers(def);
+
 export const CHAPTERS = {
   1: { title: 'I. Admitted', floor: 'F1' },
   2: { title: 'II. Cold Storage', floor: 'B1' },

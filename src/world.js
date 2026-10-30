@@ -61,7 +61,7 @@ export function buildFloor(key, def, A, opts = {}) {
 
   const floor = {
     key, def, group, COLS, ROWS, at, walkable, cellCenter, cellOf,
-    solids: [], doors: [], lockers: [], lights: [], interactables: [], waypoints: [], noisy: [], objects: {},
+    solids: [], doors: [], lockers: [], lights: [], interactables: [], waypoints: [], wp: {}, noisy: [], objects: {},
     tickers: [],                 // per-frame animations (doors swinging, music box, etc.)
     outdoor: !!def.outdoor,
   };
@@ -244,10 +244,77 @@ export function buildFloor(key, def, A, opts = {}) {
       x, z, group: g, yaw: Math.atan2(-f.x, -f.z), // camera yaw that looks out of the locker
       inside: w.pos.clone().setY(1.55).addScaledVector(f, 0.02),
       outside: w.pos.clone().addScaledVector(f, 0.85).setY(0),
+      // from inside: the overlay draws the slats, and the locker mustn't block your own light
+      hideFx(on) { g.children.slice(1).forEach((slat) => (slat.visible = !on)); body.castShadow = !on; },
     };
     floor.lockers.push(l);
     interact({ id: `locker:${x},${z}`, pos: w.pos.clone().setY(1.3), radius: 0.6, label: () => '[E] Hide in locker', use: () => floor.onUse && floor.onUse('locker', l) });
   }
+
+  // ---------------------------------------------------------------- beds you can crawl under
+  // An old hospital bed: a frame on four legs, a stained mattress and sheet, a rail, and room underneath. The sheet
+  // hangs down on the wall side; the other side is open, and that's where you look out from when you hide.
+  const bedMat = { frame: null, mattress: null, sheet: null };
+  function bed(x, z) {
+    const c = cellCenter(x, z);
+    bedMat.frame ||= psx(new THREE.MeshLambertMaterial({ color: 0x6a6e66 }));
+    bedMat.mattress ||= psx(new THREE.MeshLambertMaterial({ color: 0x8a8070 }));
+    bedMat.sheet ||= psx(new THREE.MeshLambertMaterial({ color: 0xa8a294, side: THREE.DoubleSide }));
+    // long side along the room: pick the open side (the one facing more floor)
+    const wallNS = !walkable(x, z - 1) || !walkable(x, z + 1), wallEW = !walkable(x - 1, z) || !walkable(x + 1, z);
+    const alongX = wallNS ? false : wallEW ? true : Math.random() < 0.5; // head end against a wall when there is one
+    const rotY = alongX ? Math.PI / 2 : 0;
+    const side = new THREE.Vector3(Math.cos(rotY), 0, -Math.sin(rotY)); // the bed's local +x
+    const openSign = walkable(x + Math.round(side.x), z + Math.round(side.z)) ? 1 : -1;
+    const g = new THREE.Group();
+    const part = (w, h, d, m, px, py, pz) => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      b.position.set(px, py, pz);
+      b.castShadow = b.receiveShadow = true;
+      g.add(b);
+      return b;
+    };
+    for (const [lx, lz] of [[-0.42, -0.92], [0.42, -0.92], [-0.42, 0.92], [0.42, 0.92]]) part(0.05, 0.56, 0.05, bedMat.frame, lx, 0.28, lz);
+    part(0.92, 0.06, 1.95, bedMat.frame, 0, 0.56, 0);                     // frame
+    part(0.88, 0.16, 1.88, bedMat.mattress, 0, 0.67, 0);                  // mattress
+    part(0.94, 0.03, 1.7, bedMat.sheet, 0, 0.765, 0.12);                  // sheet over it
+    part(0.5, 0.1, 0.32, bedMat.sheet, 0, 0.8, -0.72);                    // pillow
+    part(0.96, 0.5, 0.05, bedMat.frame, 0, 0.85, -0.97);                  // head end
+    part(0.03, 0.03, 1.5, bedMat.frame, openSign * 0.47, 0.95, 0.1);      // side rail
+    part(0.02, 0.48, 1.7, bedMat.sheet, -openSign * 0.48, 0.52, 0.12);    // sheet hanging down the far side
+    if (!lessGore && Math.random() < 0.5) part(0.3, 0.005, 0.4, new THREE.MeshLambertMaterial({ color: 0x4a1010 }), 0.1, 0.783, 0.2); // a stain
+    g.position.copy(c);
+    g.rotation.y = rotY;
+    add(g);
+    addSolid(c.x, c.z, alongX ? 1.0 : 0.5, alongX ? 0.5 : 1.0, 'prop');
+    const out = side.clone().multiplyScalar(openSign); // the open side
+    const spot = {
+      x, z, group: g, bed: true,
+      yaw: Math.atan2(-out.x, -out.z),                               // looking out of the open side
+      inside: c.clone().addScaledVector(out, -0.12).setY(0.26),       // lying under the mattress
+      outside: c.clone().addScaledVector(out, 1.05).setY(0),
+      hideFx(on) { g.traverse((o) => { if (o.isMesh) o.castShadow = !on; }); },
+    };
+    floor.lockers.push(spot);
+    interact({ id: `bed:${x},${z}`, pos: c.clone().addScaledVector(out, 0.45).setY(0.5), radius: 0.6, label: () => '[E] Hide under the bed', use: () => floor.onUse && floor.onUse('locker', spot) });
+  }
+
+  // ---------------------------------------------------------------- bottles and bricks to throw
+  floor.dropThrowable = (kind, pos, rotY = Math.random() * 6) => {
+    const m = kind === 'bottle'
+      ? new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.26, 6), psx(new THREE.MeshLambertMaterial({ color: 0x2f4a2a })))
+      : new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.065, 0.1), psx(new THREE.MeshLambertMaterial({ color: 0x7a3424 })));
+    if (kind === 'bottle') { m.rotation.z = Math.PI / 2; m.position.set(pos.x, 0.04, pos.z); }
+    else m.position.set(pos.x, 0.033, pos.z);
+    m.rotation.y = rotY;
+    m.castShadow = true;
+    add(m);
+    const it = interact({
+      id: `throwable:${Math.random()}`, pos: m.position, radius: 0.35, label: () => `[E] Pick up the ${kind} (to throw)`,
+      use: () => { if (floor.onTake && floor.onTake(kind)) { group.remove(m); it.enabled = false; } },
+    });
+  };
+  floor.glassDecal = (pos) => decal(T.glassTex(), 1.0, 1.0, pos.clone().setY(0.013), -Math.PI / 2, Math.random() * 6);
 
   // ---------------------------------------------------------------- pickups
   let noteN = 0, tapeN = 0;
@@ -454,7 +521,7 @@ export function buildFloor(key, def, A, opts = {}) {
       else if (ch === 'Q') payphone(x, z);
       else if (ch === '^') stairs(x, z, 'up');
       else if (ch === 'v') stairs(x, z, 'down');
-      else if (ch === 'B') prop('bed', c, Math.PI * Math.round(Math.random()) + jitter(0.4));
+      else if (ch === 'B') bed(x, z);
       else if (ch === 'y') prop('bed', c, Math.PI * Math.round(Math.random()) + jitter(0.3), { scale: 1.05 });
       else if (ch === 'G') prop('gurney', c, jitter(0.8));
       else if (ch === 'O') prop('opchair', c, Math.PI / 2 + jitter(0.3));
@@ -467,7 +534,7 @@ export function buildFloor(key, def, A, opts = {}) {
       else if (ch === 'N') pickup(x, z, 'note');
       else if (ch === 'T') pickup(x, z, 'tape');
       else if (ch === 'k') pickup(x, z, 'keycard');
-      else if (ch >= '1' && ch <= '9') floor.waypoints[+ch - 1] = c;
+      else if (ch >= '1' && ch <= '9') { floor.waypoints[+ch - 1] = c; floor.wp[+ch] = c; }
       if (ch === 'g') continue; // broken glass has its own decal
       if (ch === 'X' && !lessGore) decal(A.tex.blood[(x + z) % 3], 1.8, 1.8, c.clone().setY(0.01), -Math.PI / 2, Math.random() * 6);
       else if (walkable(x, z) && !floor.outdoor && Math.random() < 0.16) {
@@ -755,6 +822,7 @@ export function buildFloor(key, def, A, opts = {}) {
       }
       if (Math.random() < 0.035) decal(T.puddleTex(x * 3 + z), 1.3, 1.3, c.clone().setY(0.018), -Math.PI / 2, Math.random() * 6);
       if (Math.random() < 0.03 && DIRS.every(([dx, dz]) => walkable(x + dx, z + dz)) && !nearDoor(x, z)) chair(c, Math.random() < 0.6);
+      else if (Math.random() < 0.045) floor.dropThrowable(Math.random() < 0.6 ? 'bottle' : 'brick', c.clone().add(new THREE.Vector3(jitter(1.2), 0, jitter(1.2))));
     }
     function chair(c, tipped) {
       const g = new THREE.Group();
