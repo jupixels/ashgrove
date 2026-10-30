@@ -131,7 +131,7 @@ export function createUI() {
       const LEVELS = [
         { id: 'easy', name: 'EASY', text: 'A slower monster that hears and sees less. For the story.' },
         { id: 'normal', name: 'NORMAL', text: 'The way it was meant to be played.' },
-        { id: 'nightmare', name: 'NIGHTMARE', text: 'Faster, and it hears you from very far away. No saving mid-floor: payphones are dead, and dying sends you back to when you reached the floor.' },
+        { id: 'nightmare', name: 'NIGHTMARE', text: 'Faster, sharper, darker. No saving mid-floor.' },
       ];
       const list = $('diffList');
       list.innerHTML = '';
