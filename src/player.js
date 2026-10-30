@@ -241,7 +241,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
           audio.play('brick_thud', { volume: 1, pos: at });
           if (p.floor.dropThrowable) p.floor.dropThrowable('brick', at); // a brick can be picked up and thrown again
         }
-        onNoise(at, f.kind === 'bottle' ? 24 : 18, 'throw');
+        onNoise(at, f.kind === 'bottle' ? 30 : 24, 'throw');
         continue;
       }
       f.m.position.copy(next);
@@ -311,11 +311,11 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
         if (n.kind === 'tray' && !(p.crouch && !p.sprinting)) {
           n.trigger();
           audio.play('knock_over_tray', { volume: 1 });
-          onNoise(n.pos, 16, 'tray');
+          onNoise(n.pos, 22, 'tray');
         } else if (n.kind === 'glass' && !p.crouch && n.cooldown <= 0) {
           n.cooldown = 0.7;
           audio.play('glass_crunch_step', { volume: 0.8 });
-          onNoise(n.pos, 9, 'glass');
+          onNoise(n.pos, 15, 'glass');
         }
       }
     }
@@ -348,7 +348,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
       if (s !== p.lastStepSign) {
         const pace = p.sprinting ? 'run' : p.crouch ? 'sneak' : 'walk';
         audio.footstep(pace);
-        onNoise(camera.position.clone(), { run: 11, walk: 4.5, sneak: 1.2 }[pace], 'step');
+        onNoise(camera.position.clone(), { run: 13, walk: 4.5, sneak: 1.2 }[pace], 'step');
         if (p.onStep) p.onStep();
       }
       p.lastStepSign = s;

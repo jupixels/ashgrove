@@ -42,6 +42,11 @@
     #journal .floors { display: flex; gap: 6px; margin-bottom: 8px; }
     #journal .floors button { background: none; border: 1px solid #333; color: #8a846f; font-family: inherit; cursor: pointer; padding: 2px 8px; }
     #journal .floors button.on { color: #f0e8d0; border-color: #8a846f; }
+    #diffList { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; max-width: 820px; }
+    #diffList button { width: 230px; min-height: 140px; border: 1px solid #333; padding: 16px; text-align: left; background: rgba(10,10,9,0.9); color: #a8a290; font-family: inherit; cursor: pointer; }
+    #diffList button:hover, #diffList button.last { border-color: #8a1a1a; }
+    #diffList button h4 { margin: 0 0 8px; font-weight: normal; letter-spacing: 0.2em; color: #f0e8d0; font-size: 20px; }
+    #diffList button p { margin: 0; font-size: 14px; line-height: 1.6; }
     /* the endings screen: one card each, locked ones stay a mystery */
     #endingsList { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; max-width: 820px; }
     #endingsList .card { width: 230px; min-height: 150px; border: 1px solid #333; padding: 16px; box-sizing: border-box; text-align: left; background: rgba(10,10,9,0.9); }
@@ -170,22 +175,22 @@
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
       "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-      "./src/assets.js": "./src/assets.js?v=da366a4ce5",
-      "./src/audio.js": "./src/audio.js?v=da366a4ce5",
-      "./src/cutscene.js": "./src/cutscene.js?v=da366a4ce5",
-      "./src/engine.js": "./src/engine.js?v=da366a4ce5",
-      "./src/floors.js": "./src/floors.js?v=da366a4ce5",
-      "./src/journal.js": "./src/journal.js?v=da366a4ce5",
-      "./src/main.js": "./src/main.js?v=da366a4ce5",
-      "./src/maya.js": "./src/maya.js?v=da366a4ce5",
-      "./src/moments.js": "./src/moments.js?v=da366a4ce5",
-      "./src/monster.js": "./src/monster.js?v=da366a4ce5",
-      "./src/player.js": "./src/player.js?v=da366a4ce5",
-      "./src/save.js": "./src/save.js?v=da366a4ce5",
-      "./src/story.js": "./src/story.js?v=da366a4ce5",
-      "./src/textures.js": "./src/textures.js?v=da366a4ce5",
-      "./src/ui.js": "./src/ui.js?v=da366a4ce5",
-      "./src/world.js": "./src/world.js?v=da366a4ce5"
+      "./src/assets.js": "./src/assets.js?v=07983ca4e4",
+      "./src/audio.js": "./src/audio.js?v=07983ca4e4",
+      "./src/cutscene.js": "./src/cutscene.js?v=07983ca4e4",
+      "./src/engine.js": "./src/engine.js?v=07983ca4e4",
+      "./src/floors.js": "./src/floors.js?v=07983ca4e4",
+      "./src/journal.js": "./src/journal.js?v=07983ca4e4",
+      "./src/main.js": "./src/main.js?v=07983ca4e4",
+      "./src/maya.js": "./src/maya.js?v=07983ca4e4",
+      "./src/moments.js": "./src/moments.js?v=07983ca4e4",
+      "./src/monster.js": "./src/monster.js?v=07983ca4e4",
+      "./src/player.js": "./src/player.js?v=07983ca4e4",
+      "./src/save.js": "./src/save.js?v=07983ca4e4",
+      "./src/story.js": "./src/story.js?v=07983ca4e4",
+      "./src/textures.js": "./src/textures.js?v=07983ca4e4",
+      "./src/ui.js": "./src/ui.js?v=07983ca4e4",
+      "./src/world.js": "./src/world.js?v=07983ca4e4"
     }
   }
   </script>
@@ -228,8 +233,6 @@
     <h2 style="letter-spacing:0.3em">SETTINGS</h2>
     <label>Mouse sensitivity <input type="range" id="setSens" min="0.3" max="2.5" step="0.05"></label>
     <label>Volume <input type="range" id="setVol" min="0" max="1" step="0.05"></label>
-    <label>Difficulty (new games) <select id="setDiff"><option value="easy">Easy</option><option value="normal">Normal</option><option value="nightmare">Nightmare</option></select></label>
-    <div id="diffNote" class="small" style="max-width:420px;margin:-4px auto 10px;opacity:0.75"></div>
     <label>Field of view <input type="range" id="setFov" min="60" max="100" step="1"></label>
     <label>Motion blur <input type="checkbox" id="setBlur"></label>
     <label>Subtitle size <select id="setSubs"><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option></select></label>
@@ -239,6 +242,13 @@
     <div class="small" style="margin:0 0 6px">Click a key, then press the new one.</div>
     <div id="keys"></div>
     <div class="menu" style="margin-top:8px"><button id="btnKeysReset">Reset keys</button><button id="btnSettingsBack">Back</button></div>
+  </div>
+
+  <div id="difficulty" class="screen">
+    <h2 style="letter-spacing:0.3em;margin:0 0 6px">DIFFICULTY</h2>
+    <div class="small" style="margin:0 0 20px">You can't change it once the game has started.</div>
+    <div id="diffList"></div>
+    <div class="menu" style="margin-top:22px"><button id="btnDiffBack">Back</button></div>
   </div>
 
   <div id="endings" class="screen">
@@ -264,7 +274,8 @@
     <div id="keypadLabel" style="margin-bottom:12px"></div>
     <div class="display" id="keypadDisplay">____</div>
     <div class="pad" id="keypadPad"></div>
-    <div class="small">type the code · Enter to submit · Esc to step away</div>
+    <div class="menu" style="margin-top:16px"><button id="btnKeypadAway">Step away</button></div>
+    <div class="small">type the code · Enter to submit · E to step away</div>
   </div>
 
   <div id="death" class="screen">
@@ -335,6 +346,6 @@
     <div id="skip">hold SPACE to skip</div>
   </div>
 
-  <script type="module" src="src/main.js?v=da366a4ce5"></script>
+  <script type="module" src="src/main.js?v=07983ca4e4"></script>
 </body>
 </html>

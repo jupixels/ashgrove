@@ -125,6 +125,25 @@ export function createUI() {
       ui._glitchT = setTimeout(() => { document.body.classList.remove('glitching'); $('vhs').classList.remove('on'); }, 460);
       if (ui.onGlitch) ui.onGlitch();
     },
+    // New Game: choose how hard it is
+    difficultyMenu(last, onPick, onBack) {
+      const LEVELS = [
+        { id: 'easy', name: 'EASY', text: 'A slower monster that hears and sees less. For the story.' },
+        { id: 'normal', name: 'NORMAL', text: 'The way it was meant to be played.' },
+        { id: 'nightmare', name: 'NIGHTMARE', text: 'Faster, and it hears you from very far away. No saving mid-floor: payphones are dead, and dying sends you back to when you reached the floor.' },
+      ];
+      const list = $('diffList');
+      list.innerHTML = '';
+      for (const l of LEVELS) {
+        const b = document.createElement('button');
+        b.className = l.id === last ? 'last' : '';
+        b.innerHTML = `<h4>${l.name}</h4><p>${l.text}</p>`;
+        b.onclick = () => { show($('difficulty'), false); onPick(l.id); };
+        list.appendChild(b);
+      }
+      show($('difficulty'), true);
+      $('btnDiffBack').onclick = () => { show($('difficulty'), false); onBack(); };
+    },
     // which endings you've found: locked ones show a hint, the secret one tells you what it takes
     endingsMenu(found, onBack) {
       const ENDINGS = [
@@ -167,31 +186,23 @@ export function createUI() {
     },
     settingsMenu(settings, onChange, onBack) {
       show(el.settings, true);
-      const sens = $('setSens'), vol = $('setVol'), gore = $('setGore'), flash = $('setFlash'), diff = $('setDiff');
+      const sens = $('setSens'), vol = $('setVol'), gore = $('setGore'), flash = $('setFlash');
       const fov = $('setFov'), blur = $('setBlur'), subs = $('setSubs');
       fov.value = settings.fov || 70;
       blur.checked = !!settings.motionBlur;
       subs.value = settings.subtitles || 'medium';
       let keys = { ...DEFAULT_KEYS, ...(settings.keys || {}) };
-      const DIFF_NOTE = {
-        easy: 'A slower monster that hears and sees less.',
-        normal: 'The way it was meant to be played.',
-        nightmare: 'A faster monster with sharper senses. No saving mid-floor: payphones are dead, and dying sends you back to when you reached the floor.',
-      };
-      diff.value = settings.difficulty || 'normal';
-      $('diffNote').textContent = DIFF_NOTE[diff.value];
       sens.value = settings.sensitivity;
       vol.value = settings.volume;
       gore.checked = settings.lessGore;
       flash.checked = settings.reduceFlashing;
       const changed = () => {
-        $('diffNote').textContent = DIFF_NOTE[diff.value];
         onChange({
-          sensitivity: +sens.value, volume: +vol.value, lessGore: gore.checked, reduceFlashing: flash.checked, difficulty: diff.value,
+          sensitivity: +sens.value, volume: +vol.value, lessGore: gore.checked, reduceFlashing: flash.checked,
           fov: +fov.value, motionBlur: blur.checked, subtitles: subs.value, keys,
         });
       };
-      sens.oninput = vol.oninput = gore.onchange = flash.onchange = diff.onchange = fov.oninput = blur.onchange = subs.onchange = changed;
+      sens.oninput = vol.oninput = gore.onchange = flash.onchange = fov.oninput = blur.onchange = subs.onchange = changed;
       // key rebinding: click an action, press the new key (Esc cancels)
       const drawKeys = () => {
         const box = $('keys');
@@ -259,11 +270,13 @@ export function createUI() {
         if (/^Digit\d$/.test(e.code)) press(e.code.slice(5));
         else if (e.code === 'Enter') submit();
         else if (e.code === 'Backspace') { code = code.slice(0, -1); render(); }
-        else if (e.code === 'Escape') close();
+        else if (e.code === 'KeyE' && !e.repeat && Date.now() - opened > 300) close(); // (not the same E press that opened it)
       };
-      const close = () => { show(el.keypad, false); removeEventListener('keydown', key); onClose(); };
+      const close = () => { show(el.keypad, false); removeEventListener('keydown', key); $('btnKeypadAway').onclick = null; onClose(); };
+      $('btnKeypadAway').onclick = close;
       render();
       show(el.keypad, true);
+      const opened = Date.now();
       addEventListener('keydown', key);
     },
     death(text, onRetry, onMenu, nightmare) {

@@ -68,9 +68,9 @@ applySettings();
 // ---------------------------------------------------------------- saving
 // how hard the monster is: speed, how far it hears, how far it sees. Nightmare also turns off mid-floor saving.
 const DIFFICULTY = {
-  easy: { speed: 0.82, hearing: 0.75, sight: 0.8 },
-  normal: { speed: 1, hearing: 1, sight: 1 },
-  nightmare: { speed: 1.22, hearing: 1.3, sight: 1.2 },
+  easy: { speed: 0.82, hearing: 0.8, sight: 0.85 },
+  normal: { speed: 1, hearing: 1.2, sight: 1 },
+  nightmare: { speed: 1.22, hearing: 2.2, sight: 1.25 },
 };
 const nightmare = () => game.save && game.save.difficulty === 'nightmare';
 
@@ -307,7 +307,15 @@ function continueGame() {
 function showMainMenu() {
   ui.mainMenu({
     canContinue: !!SAVE.loadSave(),
-    onNew: newGame,
+    // New Game: pick a difficulty first
+    onNew: () => {
+      ui.hideMainMenu();
+      ui.difficultyMenu(settings.difficulty || 'normal', (d) => {
+        settings = { ...settings, difficulty: d };
+        SAVE.writeSettings(settings);
+        newGame();
+      }, showMainMenu);
+    },
     onContinue: continueGame,
     onSettings: () => { ui.hideMainMenu(); openSettings(showMainMenu); },
     onCredits: () => { ui.hideMainMenu(); ui.credits(CREDITS, showMainMenu); },

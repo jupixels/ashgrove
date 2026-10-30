@@ -170,8 +170,13 @@ export function createMonster({ A, scene, audio }) {
     const toPlayer = pp.clone().setY(0).sub(group.position.clone().setY(0)).normalize();
     const facing = new THREE.Vector3(Math.sin(group.rotation.y), 0, Math.cos(group.rotation.y));
     const inView = facing.dot(toPlayer) > 0.35 || dist < 3;
-    const lit = player.flashOn || dist < 7 * m.sightScale;
-    const sees = !player.hidden && dist < 18 * m.sightScale && inView && lit && f.los(eye, pp);
+    // how far it can see you: further on a floor whose lights you've switched back on, and if you're standing under a
+    // working light you don't need your torch on to be seen
+    const powered = f.def.needsPower && f.powered;
+    const range = 22 * m.sightScale * (powered ? 1.35 : 1);
+    const underLight = f.lights.some((l) => l.lit && Math.hypot(l.light.position.x - pp.x, l.light.position.z - pp.z) < 5);
+    const lit = player.flashOn || underLight || dist < 9 * m.sightScale;
+    const sees = !player.hidden && dist < range && inView && lit && f.los(eye, pp);
 
     if (m.state === 'stunned') {
       m.stunT -= dt;
