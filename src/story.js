@@ -789,14 +789,16 @@ export function createStory(ctx) {
     if (s.tapes.length >= TAPE_COUNT) {
       // every tape found: the hidden third ending. Voss's last entry, and what this place was for.
       cards.splice(cards.length - 1, 1); // instead of the usual ending title
+      // his recorded entry runs under these cards: stretch or squeeze them to keep the words in step with his voice
+      const k = Math.max(0.6, (len('voss_final', 40.4) - 6 * 0.9) / 35);
       cards.push(
         ['You found every one of Dr. Voss\'s tapes.\nThere is one more entry, after the last.', 4.5, () => audio.play('cassette_insert_play', { volume: 0.7 })],
-        ['"Final entry. Whoever has collected these: you deserve to know what I did."', 5, () => audio.play('voss_final', { volume: 1 })],
-        ['"My daughter died on the fourth floor in 1989.\nHer heart stopped, and I could not start it again."', 6],
-        ['"So I built a body that cannot stop. Every patient I joined to it gave it another heart. When one fails, the others carry it."', 7],
-        ['"I called it the Continuance. It does not die. It only grows.\nAnd to grow, it needs more of us."', 6.5],
-        ['"It doesn\'t kill the people it takes. It keeps them."', 5],
-        ['"I\'m in there too. Somewhere. Some nights I can still hear her music box."', 5.5],
+        ['"Final entry. Whoever has collected these: you deserve to know what I did.\"', 5 * k, () => audio.play('voss_final', { volume: 1 })],
+        ['"My daughter died on the fourth floor in 1989.\nHer heart stopped, and I could not start it again.\"', 6 * k],
+        ['"So I built a body that cannot stop. Every patient I joined to it gave it another heart. When one fails, the others carry it.\"', 7 * k],
+        ['"I called it the Continuance. It does not die. It only grows.\nAnd to grow, it needs more of us.\"', 6.5 * k],
+        ['"It doesn\'t kill the people it takes. It keeps them.\"', 5 * k],
+        ['"I\'m in there too. Somewhere. Some nights I can still hear her music box.\"', 5.5 * k],
         kind === 'together'
           ? ['Maya sleeps the whole drive home.\nBy morning, her stitches have healed. All of them.', 5.5]
           : ['Some nights, you swear you can hear a music box.', 4.5],
