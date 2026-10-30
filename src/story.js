@@ -177,7 +177,7 @@ export function createStory(ctx) {
       if (!name) return;
       if (!S().tapes.includes(name)) S().tapes.push(name);
       audio.play('cassette_insert_play', { volume: 0.7 });
-      setTimeout(() => voice(name, `Dr. Voss (tape ${S().tapes.length})`, TAPE_LINES[name], 10, 'whisper'), 900);
+      setTimeout(() => voice(name, `Dr. Voss (tape ${S().tapes.length}/${TAPE_COUNT})`, TAPE_LINES[name], 10, 'whisper'), 900);
       if (S().tapes.length === 1) setTimeout(() => ui.message('He talks like there were other entries. Dr. Voss must have left more of these somewhere.', 5000), 900 + (len(name, 10) + 1) * 1000);
       if (S().tapes.length === TAPE_COUNT) setTimeout(() => ui.message('It sounds like a goodbye. Like he knew no one would ever hear it.', 5000), 900 + (len(name, 10) + 1) * 1000);
     } else if (kind === 'keycard') {
