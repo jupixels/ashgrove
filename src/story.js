@@ -105,8 +105,13 @@ export function createStory(ctx) {
         if (F().welded) f.emergency = true;
         if (how === 'elevator' && !F().woke) {
           F().woke = true;
-          ui.message('You wake up on the elevator floor. The doors are open. You are back on the ground floor.', 5000);
-          scene(async (w) => { await w(5.5); objective('Insert the three keycards at the security console.'); });
+          ui.message('You wake up on the elevator floor. The doors are open.', 4000);
+          scene(async (w) => {
+            await w(4.2);
+            ui.say('Sam', '...The ground floor? It dragged me all the way back down.', 3500);
+            await w(4);
+            objective('Insert the three keycards at the security console.');
+          });
         } else objective(S().objective || 'Insert the three keycards at the security console.');
         if (F().fakeMayaDone) monster.startAI({ avoid: player.position });
       } else {
@@ -140,7 +145,8 @@ export function createStory(ctx) {
         scene(async (w) => { await w(2.5); ui.message('From the operating theatre: metal on metal. Then something that might be a muffled voice.', 4500); });
         objective('Follow the sound. The operating theatre.');
       } else {
-        mayaFollowStart(player.position);
+        f.objects.mayaTable.freed = true; // (no cutting her free twice)
+        mayaFollowStart(besidePlayer());
         objective('Get Maya to the roof. The stairs are at the end of the ward.');
       }
       monster.startAI({ avoid: player.position });
@@ -463,6 +469,7 @@ export function createStory(ctx) {
         monster.startAI({ at: monster.mode === 'ai' ? monster.group.position.clone() : undefined, avoid: player.position, state: 'chase' });
         monster.lastSeen = player.position.clone();
         objective('Get Maya to the roof! The stairs at the far end of the ward.');
+        ctx.checkpoint({ x: player.position.x, z: player.position.z, yaw: player.yaw() }); // die after this and you're back here, with her
       });
     },
     fireEscape() {
@@ -498,6 +505,18 @@ export function createStory(ctx) {
     maya.group.rotation.set(-Math.PI / 2, 0, 0);
     maya.play('idle');
     mayaFollowing = false;
+  }
+  // a clear spot a step behind you (or beside you), for Maya to appear without standing inside you
+  function besidePlayer() {
+    const f = floor(), fw = player.forward();
+    fw.y = 0;
+    fw.normalize();
+    for (const [back, side] of [[-1.2, 0], [-0.9, 0.9], [-0.9, -0.9], [0, 1.2], [0, -1.2], [1.2, 0]]) {
+      const p = player.position.clone().addScaledVector(fw, back).add(V(-fw.z * side, 0, fw.x * side));
+      const [x, z] = f.cellOf(p);
+      if (f.walkable(x, z) && !f.solids.some((s) => p.x > s.minX - 0.3 && p.x < s.maxX + 0.3 && p.z > s.minZ - 0.3 && p.z < s.maxZ + 0.3)) return p.setY(0);
+    }
+    return player.position.clone().setY(0);
   }
   function mayaFollowStart(pos) {
     maya.group.visible = true;
