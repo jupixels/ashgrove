@@ -701,6 +701,7 @@ export function createStory(ctx) {
   // ---------------------------------------------------------------- 3F: the ICU monitors beat with your steps, then flatline
   let icuBeats = -1;
   player.onStep = () => {
+    moments.step(); // (the footsteps in the ceiling)
     if (icuBeats < 0 || !floor() || floor().key !== 'F3') return;
     audio.play('heart_monitor_beep', { volume: 0.9 });
     icuBeats++;

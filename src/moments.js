@@ -1,6 +1,7 @@
 // Small moments on each floor, on top of the main story beats: a wheelchair that rolls out by itself, a phone that
-// rings as you pass, a mirror with something standing behind you, a voice in the vents, and Maya's footprints in the
-// blood that lead somewhere and just stop. Each happens once (remembered in the save's flags).
+// rings as you pass, a mirror with something standing behind you, a voice in the vents, Maya's footprints in the
+// blood that lead somewhere and just stop, and footsteps in the ceiling that keep pace with yours. Each happens once
+// (remembered in the save's flags).
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import * as T from './textures.js';
@@ -13,6 +14,7 @@ export function createMoments(ctx) {
   const F = () => ctx.save.flags;
   let active = [];   // per-frame updaters for this floor
   let loops = [];    // positional loops to stop when leaving
+  let stepHook = null; // something that wants to know each time you take a step
 
   const inCells = (x0, x1, z0, z1) => {
     const [x, z] = ctx.floor.cellOf(player.position);
@@ -191,6 +193,55 @@ export function createMoments(ctx) {
     });
   }
 
+  // ---------------------------------------------------------------- footsteps in the ceiling, keeping pace with yours
+  // After you've walked a while, something up in the crawlspace walks when you walk: a beat late, a little behind you,
+  // soft when you creep, heavy when you run. Stop, and it stops too. Then it takes one more step, right above your
+  // head. Walk on and it follows; stop again and it drags itself away. Nothing to see, no sting: just the sound.
+  const STEPS = ['monster_step_1', 'monster_step_2', 'monster_step_3'];
+  function above({ area, flag, when }) {
+    if (F()[flag]) return;
+    let walked = 0, follows = 0, stops = 0, sinceStep = 0, heldT = 0, n = 0, phase = 'wait';
+    const pending = [];
+    const overhead = (back) => {
+      const fw = player.forward();
+      fw.y = 0;
+      fw.normalize();
+      return player.position.clone().addScaledVector(fw, -back).setY(3.4);
+    };
+    const thud = (pos, volume) => audio.play(audio.buffers && audio.buffers.monster_step_1 ? STEPS[n++ % 3] : 'monster_footstep_heavy', { volume, pos, muffled: true, rate: 0.92 });
+    const finish = () => {
+      F()[flag] = true;
+      phase = 'done';
+      stepHook = null;
+      audio.play('monster_drag_tubes', { volume: 0.45, pos: overhead(4), muffled: true }); // off through the crawlspace
+    };
+    stepHook = () => {
+      if (phase === 'done' || !when() || !inCells(...area)) return;
+      sinceStep = 0;
+      if (phase === 'wait' && ++walked < 14) return;
+      phase = 'follow'; // (and if it was holding still above you: you moved, so it moves)
+      follows++;
+      if (follows <= 5 && follows % 2 === 0) return; // at first only now and then, as if far off; then every step
+      pending.push({ t: 0.26 + Math.random() * 0.08, pos: overhead(1.6), volume: player.sprinting ? 0.85 : player.crouch ? 0.2 : 0.5 });
+      if (follows === 12) ui.message('Footsteps in the ceiling. Keeping pace with yours.', 3500);
+    };
+    active.push((dt) => {
+      for (let i = pending.length - 1; i >= 0; i--) if ((pending[i].t -= dt) <= 0) thud(pending[i].pos, pending[i].volume), pending.splice(i, 1);
+      if (phase === 'done') return !pending.length;
+      sinceStep += dt;
+      if (!when()) { pending.length = 0; return; } // it's somewhere else just now
+      if (phase === 'follow' && follows >= 6 && sinceStep > 0.8) {
+        // you stopped. It stopped. Then one more step, right over your head.
+        phase = 'held';
+        heldT = 0;
+        stops++;
+        pending.push({ t: 0.75, pos: player.position.clone().setY(3.4), volume: 0.65 });
+      }
+      if (phase === 'held' && (heldT += dt) > (stops >= 2 ? 3.5 : 9)) finish();
+      if (phase === 'follow' && !inCells(...area)) finish();
+    });
+  }
+
   // ---------------------------------------------------------------- Dr. Voss's door code, scrawled on a wall
   // big enough to read in your torchlight. A new code every game, on a wall inside one of the rooms (never the
   // corridors): operating room 1, operating room 2, the ICU, storage, records.
@@ -211,11 +262,13 @@ export function createMoments(ctx) {
       footprints([[11, 6], [21, 6], [21, 10]]);                            // from where she was taken, into the side hall... then nothing
       wheelchair({ from: [15, 8], to: [15, 5], trigger: [8, 13, 5, 6], flag: 'wheelchairF1' });
       mirror({ at: [40, 11], area: [39, 41, 11, 14], flag: 'mirrorF1' }); // the restroom
+      above({ area: [1, 28, 5, 6], flag: 'aboveF1', when: () => ctx.save.chapter === 1 && !monster.group.visible }); // the main corridor
     },
     F2() {
       phone({ at: [16, 7], face: 'north', trigger: [12, 24, 4, 9], flag: 'phoneF2' }); // the nurse station
       wheelchair({ from: [33, 8], to: [33, 12], trigger: [26, 36, 7, 12], flag: 'wheelchairF2' });
       vent({ at: [11, 7], face: 'north', range: 12 });                      // the playroom
+      above({ area: [1, 37, 4, 5], flag: 'aboveF2', when: () => !F().musicbox && !monster.group.visible }); // the front corridor, while the music plays
     },
     F3() {
       doorCode();
@@ -232,9 +285,11 @@ export function createMoments(ctx) {
       loops.forEach((stop) => stop());
       loops = [];
       active = [];
+      stepHook = null;
       if (FLOORS[key]) FLOORS[key]();
     },
     update(dt) { active = active.filter((fn) => !fn(dt)); },
-    reset() { loops.forEach((stop) => stop()); loops = []; active = []; },
+    step() { if (stepHook) stepHook(); },
+    reset() { loops.forEach((stop) => stop()); loops = []; active = []; stepHook = null; },
   };
 }

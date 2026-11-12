@@ -148,8 +148,9 @@ export class GameAudio {
   // ---------------------------------------------------------------- 3D sound
   // Sounds given a position are placed around you (left, right, behind) with an HRTF panner, and come through
   // muffled when there's a wall or a closed door in between. Volume over distance stays with the caller.
-  // `occluded(pos)` is set by the game: true when something solid is between you and pos.
-  spatial(pos) {
+  // `occluded(pos)` is set by the game: true when something solid is between you and pos. `muffled` forces it
+  // (a sound through the ceiling, which the walls check can't know about).
+  spatial(pos, muffled = false) {
     const p = this.ctx.createPanner();
     p.panningModel = 'HRTF';
     p.distanceModel = 'linear';
@@ -157,7 +158,7 @@ export class GameAudio {
     p.positionX.value = pos.x; p.positionY.value = pos.y || 1.2; p.positionZ.value = pos.z;
     const muffle = this.ctx.createBiquadFilter();
     muffle.type = 'lowpass';
-    const node = { input: p, muffle, pos: pos.clone ? pos.clone() : { ...pos }, wall: 1 };
+    const node = { input: p, muffle, pos: pos.clone ? pos.clone() : { ...pos }, wall: 1, muffled };
     const out = this.ctx.createGain();
     p.connect(muffle).connect(out).connect(this.master);
     node.out = out;
@@ -165,7 +166,7 @@ export class GameAudio {
     return node;
   }
   occlude(node, now) {
-    const blocked = this.occluded ? this.occluded(node.pos) : false;
+    const blocked = node.muffled || (this.occluded ? this.occluded(node.pos) : false);
     // far away sounds far away: the air takes the top off (and a wall takes off much more)
     const d = this._ear ? Math.hypot(node.pos.x - this._ear.x, node.pos.z - this._ear.z) : 0;
     const air = 20000 - Math.min(1, d / 40) * 16500;
@@ -195,9 +196,9 @@ export class GameAudio {
   }
 
   // Play a sound by name, optionally at a world position ({ pos }). Returns { stop(), gain } for buffers.
-  play(name, { volume = 1, rate = 1, loop = false, pos = null } = {}) {
+  play(name, { volume = 1, rate = 1, loop = false, pos = null, muffled = false } = {}) {
     const buf = this.buffers[name];
-    const space = pos ? this.spatial(pos) : null;
+    const space = pos ? this.spatial(pos, muffled) : null;
     const dest = space ? space.input : this.master;
     if (buf) {
       const src = this.ctx.createBufferSource();
