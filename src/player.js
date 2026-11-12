@@ -375,7 +375,7 @@ export function createPlayer({ camera, scene, audio, ui, settings, onNoise }) {
     p.gaspCooldown = Math.max(0, p.gaspCooldown - dt);
     const want = held('breath') && p.gaspCooldown <= 0;
     p.breathHeld = want && p.breath > 0;
-    p.breath = THREE.MathUtils.clamp(p.breath + (p.breathHeld ? -dt / 7 : dt / 3), 0, 1);
+    p.breath = THREE.MathUtils.clamp(p.breath + (p.breathHeld ? -dt / 10 : dt / 3), 0, 1); // ~10 s of held breath, back in ~3 s
     if (want && p.breath <= 0) { // out of air: you gasp
       p.breathHeld = false;
       p.gaspCooldown = 2.5;
