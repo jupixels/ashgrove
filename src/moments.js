@@ -1,7 +1,7 @@
 // Small moments on each floor, on top of the main story beats: a wheelchair that rolls out by itself, a phone that
 // rings as you pass, a mirror with something standing behind you, a voice in the vents, Maya's footprints in the
 // blood that lead somewhere and just stop, and footsteps in the ceiling that keep pace with yours. Each happens once
-// (remembered in the save's flags).
+// (remembered in the save's flags). And on every floor, a patient chart: yours.
 import * as THREE from 'three';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import * as T from './textures.js';
@@ -242,6 +242,80 @@ export function createMoments(ctx) {
     });
   }
 
+  // ---------------------------------------------------------------- the patient chart: yours
+  // One hangs on a wall on every floor. Someone has been keeping notes on you: when you were admitted, where you hide,
+  // whether you run, whether you keep the light on, how many times you've died. It's written from what you've actually
+  // done (save.obs, save.hid, deaths, tapes), and the plan at the bottom moves on as you go up. Read it again later
+  // and it has changed.
+  const clock = (sec) => {
+    const m = (23 * 60 + 40 + Math.floor(sec / 60)) % 1440; // you went in at 23:40
+    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  };
+  function chartText() {
+    const s = ctx.save, f = s.flags, o = s.obs || {}, t = o.t || 0;
+    const hides = Object.values(s.hid || {}).flatMap((floor) => Object.values(floor));
+    const hid = hides.reduce((a, b) => a + b, 0);
+    const deaths = s.deaths || 0;
+    const obs = [
+      deaths && `Re-admitted ${deaths === 1 ? 'once' : `${deaths} times`}. Each intake goes more smoothly.`,
+      !hid ? 'Has not hidden yet.' : Math.max(...hides) >= 2 ? 'Hides when frightened. Always goes back to the same place.' : 'Hides when frightened.',
+      (o.run || 0) > 25 ? 'Runs. Loudly. Easy to follow.' : t > 150 && 'Walks softly. Listens before it moves.',
+      t > 90 && ((o.dark || 0) / t > 0.2 ? 'Has learned to put the light out.' : 'Will not let the light go out.'),
+      (o.phone || 0) >= 3 && 'Keeps looking at us through the phone.',
+      s.tapes.length && 'Has been listening to the doctor\'s tapes.',
+    ].filter(Boolean).slice(0, 4).map((l) => '- ' + l); // (a page: it has to fit on a small screen)
+    const ch = s.chapter;
+    const plan = f.mayaFreed ? 'Bed 15 is empty. Bring them both back.'
+      : ch >= 6 ? 'None needed. The patient has come up to the ward by itself.'
+      : ch === 5 ? 'Theatre 2, tonight. Bed 16 is made up.'
+      : ch >= 3 ? 'Prepare for theatre. Keep the patient moving upward.'
+      : 'Observe. Do not approach yet.';
+    const core = [
+      'REYES, Sam. 16. Admitted 10/31, 23:40. Bed 16.',
+      `With: OKAFOR, Maya. 16. Bed 15.${f.mayaFreed ? ' DISCHARGED WITHOUT CONSENT.' : ''}`,
+      '', 'Obs.:', ...obs, '', `Plan: ${plan}  - E.V.`,
+    ];
+    const text = [...core.slice(0, 3), `Obs. ${clock(t)}:`, ...core.slice(4)].join('\n');
+    return { text, core: core.join('\n') }; // (core: the same, without the time, to tell whether anything's new)
+  }
+  function chart({ at, face }) {
+    const f = ctx.floor;
+    const c = cellPos(...at);
+    const n = { north: V(0, 0, 1), south: V(0, 0, -1), east: V(-1, 0, 0), west: V(1, 0, 0) }[face];
+    const pos = c.clone().addScaledVector(n, -0.97).setY(1.45);
+    const g = new THREE.Group();
+    const board = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.36, 0.015), new THREE.MeshLambertMaterial({ color: 0x4a3a2a }));
+    const paper = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.29, 0.004), new THREE.MeshLambertMaterial({ color: 0xcfc8b2 }));
+    paper.position.set(0, -0.02, 0.01);
+    const clip = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.03, 0.02), new THREE.MeshLambertMaterial({ color: 0x8a8a80 }));
+    clip.position.set(0, 0.16, 0.012);
+    g.add(board, paper, clip);
+    const ink = new THREE.MeshBasicMaterial({ color: 0x2a2620 });
+    for (let i = 0; i < 9; i++) { // lines of handwriting
+      const line = new THREE.Mesh(new THREE.BoxGeometry(0.08 + ((i * 37) % 9) / 100, 0.005, 0.002), ink);
+      line.position.set(-0.03 + ((i * 13) % 5) / 200, 0.09 - i * 0.026, 0.013);
+      g.add(line);
+    }
+    g.position.copy(pos);
+    g.rotation.y = Math.atan2(n.x, n.z);
+    f.add(g);
+    const seen = () => (F().chartSeen ||= {});
+    f.interact({
+      id: 'chart', pos, radius: 0.35,
+      label: () => (seen()[f.key] && seen()[f.key] !== chartText().core ? '[E] Read the patient chart (fresh ink)' : '[E] Read the patient chart'),
+      use: () => {
+        const { text, core } = chartText();
+        seen()[f.key] = core;
+        audio.play('pickup_paper', { volume: 0.6 });
+        const title = 'Patient chart #16';
+        const read = (ctx.save.notesRead ||= []);
+        const kept = read.find((r) => r.title === title);
+        if (kept) kept.text = text; else read.push({ title, text }); // (the journal keeps the latest version)
+        ctx.overlay((close) => ui.note(title, text, close));
+      },
+    });
+  }
+
   // ---------------------------------------------------------------- Dr. Voss's door code, scrawled on a wall
   // big enough to read in your torchlight. A new code every game, on a wall inside one of the rooms (never the
   // corridors): operating room 1, operating room 2, the ICU, storage, records.
@@ -259,23 +333,30 @@ export function createMoments(ctx) {
   // ---------------------------------------------------------------- per floor
   const FLOORS = {
     F1() {
+      chart({ at: [10, 5], face: 'north' });                               // a few steps from where you start
       footprints([[11, 6], [21, 6], [21, 10]]);                            // from where she was taken, into the side hall... then nothing
       wheelchair({ from: [15, 8], to: [15, 5], trigger: [8, 13, 5, 6], flag: 'wheelchairF1' });
       mirror({ at: [40, 11], area: [39, 41, 11, 14], flag: 'mirrorF1' }); // the restroom
       above({ area: [1, 28, 5, 6], flag: 'aboveF1', when: () => ctx.save.chapter === 1 && !monster.group.visible }); // the main corridor
     },
+    B1() {
+      chart({ at: [6, 2], face: 'north' });                                // at the foot of the stairs
+    },
     F2() {
+      chart({ at: [3, 7], face: 'east' });                                 // by the stairs
       phone({ at: [16, 7], face: 'north', trigger: [12, 24, 4, 9], flag: 'phoneF2' }); // the nurse station
       wheelchair({ from: [33, 8], to: [33, 12], trigger: [26, 36, 7, 12], flag: 'wheelchairF2' });
       vent({ at: [11, 7], face: 'north', range: 12 });                      // the playroom
       above({ area: [1, 37, 4, 5], flag: 'aboveF2', when: () => !F().musicbox && !monster.group.visible }); // the front corridor, while the music plays
     },
     F3() {
+      chart({ at: [3, 7], face: 'east' });                                 // by the stairs
       doorCode();
       vent({ at: [12, 7], face: 'north', range: 14 });                      // the ICU
       phone({ at: [31, 7], face: 'north', trigger: [30, 36, 4, 11], flag: 'phoneF3' }); // records
     },
     F4() {
+      chart({ at: [4, 4], face: 'north' });                                // just in from the stairs
       footprints([[17, 4], [17, 6], [17, 8]]);                              // small prints, into the theatre
     },
   };

@@ -651,6 +651,7 @@ export function createStory(ctx) {
   // ---------------------------------------------------------------- 2F: the corner of the playroom, through the phone
   const corner = { state: 'idle', seenT: 0 };
   player.onPhone = (up) => {
+    if (up && S()) { const o = (S().obs ||= {}); o.phone = (o.phone || 0) + 1; } // (for the patient chart)
     if (!floor() || floor().key !== 'F2' || F().cornerDone) return;
     if (!up && corner.state === 'shown' && corner.seenT > 0.5) { corner.state = 'armed'; monster.group.visible = false; }
     else if (up && corner.state === 'armed') { // raise it again: it's in your face
@@ -832,6 +833,13 @@ export function createStory(ctx) {
     if (deathScare) { deathScare(dt); return; }
     const f = floor();
     if (!f) return;
+    // what you do, for the patient chart: time on your feet, time running, time in the dark
+    if (!player.frozen && !player.hidden) {
+      const o = (S().obs ||= {});
+      o.t = (o.t || 0) + dt;
+      if (player.sprinting) o.run = (o.run || 0) + dt;
+      if (!player.flashOn) o.dark = (o.dark || 0) + dt;
+    }
     moments.update(dt);
     for (const k in loops) {
       const l = loops[k];
