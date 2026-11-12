@@ -24,8 +24,10 @@ Six chapters across five floors and the roof:
 6. **Ward C**: free Maya (or don't), then the roof
 
 The monster patrols, follows noise (running, trays, broken glass, the breaker lever), chases you when it
-sees you, and searches when it loses you. Hide in lockers and hold your breath. Your light won't stop it.
-Payphones save your progress. Two endings plus a secret one for finding all eight of Dr. Voss's tapes.
+sees you, and searches when it loses you. It hunts by sound, so it stops now and then to listen, and goes quiet
+when it's close. When it loses you it tries the hiding places nearby, the ones you've used before first.
+Hide in lockers and hold your breath. Your light won't stop it. Someone is keeping a chart on you: read it on
+every floor. Payphones save your progress. Two endings plus a secret one for finding all eight of Dr. Voss's tapes.
 
 ## Play locally
 
