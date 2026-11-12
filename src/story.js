@@ -96,6 +96,7 @@ export function createStory(ctx) {
     f.onUse = use;
     f.onPickup = pickup;
     monster.setFloor(f);
+    monster.habits = () => (S().hid || {})[key] || {};
     if (key !== 'F4' && key !== 'ROOF') maya.group.visible = false;
     ui.keycards(F());
 
@@ -220,7 +221,13 @@ export function createStory(ctx) {
       }, close));
       return;
     }
-    if (kind === 'locker') { player.hide(data); return; }
+    if (kind === 'locker') {
+      player.hide(data);
+      // it remembers where you hide (and the next time it loses you, it tries there first)
+      const hid = ((S().hid ||= {})[key] ||= {});
+      hid[`${data.x},${data.z}`] = (hid[`${data.x},${data.z}`] || 0) + 1;
+      return;
+    }
     if (kind === 'payphone') {
       if (ctx.nightmare) { audio.play('walkie_static', { volume: 0.1 }); ui.message('The line is dead. (No saving on Nightmare.)', 3000); return; }
       audio.play('walkie_static', { volume: 0.15 });
@@ -730,6 +737,21 @@ export function createStory(ctx) {
       monster.lastSeen = player.position.clone();
     });
   }
+
+  // ---------------------------------------------------------------- it tries a hiding place
+  // A locker: the handle rattles, then it stands there breathing at the slats. A bed: it sniffs along the mattress.
+  // Behind that very door, you feel it.
+  story.tried = (spot, dist) => {
+    const v = THREE.MathUtils.clamp(1 - dist / 30, 0, 1);
+    const at = spot.group.position.clone().setY(spot.bed ? 0.5 : 1.2);
+    if (v > 0.02) audio.play(spot.bed ? 'monster_sniff' : 'door_locked_rattle', { volume: (spot.bed ? 0.8 : 1.1) * v, pos: at });
+    if (player.hidden !== spot) return;
+    if (!spot.bed) ctx.fx.shake = ctx.settings.reduceFlashing ? 0.08 : 0.22;
+    scene(async (w) => {
+      await w(1.1);
+      if (player.hidden === spot && monster.mode === 'ai' && monster.state === 'search') audio.play('monster_breathing', { volume: 0.55, pos: spot.outside.clone().setY(1.7) });
+    });
+  };
 
   // ---------------------------------------------------------------- dying
   // getting caught: no slash from across the room. Its face lunges into yours, fills the screen and screams.

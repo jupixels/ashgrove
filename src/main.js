@@ -46,7 +46,7 @@ const game = { state: 'menu', save: null, floor: null, taken: new Set(), overlay
 const view = { scene, camera };
 
 const monster = createMonster({ A, scene, audio });
-const player = createPlayer({ camera, scene, audio, ui, settings, onNoise: (pos, r) => monster.hear(pos, r) });
+const player = createPlayer({ camera, scene, audio, ui, settings, onNoise: (pos, r, kind) => monster.hear(pos, r, kind) });
 player.yaw = () => camera.rotation.y;
 const maya = setupMaya(A.models.maya);
 maya.group.visible = false;
@@ -66,11 +66,12 @@ function applySettings() {
 applySettings();
 
 // ---------------------------------------------------------------- saving
-// how hard the monster is: speed, how far it hears, how far it sees. Nightmare also turns off mid-floor saving.
+// how hard the monster is: speed, how far it hears, how far it sees, how many hiding places it tries when it loses
+// you. Nightmare also turns off mid-floor saving.
 const DIFFICULTY = {
-  easy: { speed: 0.82, hearing: 0.8, sight: 0.85, lights: 1, fog: 1, ambient: 1 },
-  normal: { speed: 1, hearing: 1.2, sight: 1, lights: 1, fog: 1, ambient: 1 },
-  nightmare: { speed: 1.22, hearing: 2.2, sight: 1.25, lights: 0.55, fog: 1.5, ambient: 0.5 }, // and darker, foggier
+  easy: { speed: 0.82, hearing: 0.8, sight: 0.85, lights: 1, fog: 1, ambient: 1, checks: 1 },
+  normal: { speed: 1, hearing: 1.2, sight: 1, lights: 1, fog: 1, ambient: 1, checks: 2 },
+  nightmare: { speed: 1.22, hearing: 2.2, sight: 1.25, lights: 0.55, fog: 1.5, ambient: 0.5, checks: 3 }, // and darker, foggier
 };
 const nightmare = () => game.save && game.save.difficulty === 'nightmare';
 
@@ -114,6 +115,7 @@ function loadFloor(key, arrive) {
   monster.speedScale = diff.speed * (def.monsterSpeed || 1);
   monster.hearScale = diff.hearing;
   monster.sightScale = diff.sight;
+  monster.lockerChecks = diff.checks;
   floor.lightScale = diff.lights; // Nightmare: the building is darker
   const at = typeof arrive === 'object' && arrive ? arrive : def.arrive[arrive] || Object.values(def.arrive)[0];
   player.spawn(at);
@@ -392,6 +394,7 @@ const clock = new THREE.Clock();
 let intro = null;
 const monsterEvents = {
   caught: (how) => story.caught(how),
+  tried: (spot, dist) => story.tried(spot, dist),
   spotted: () => {},
 };
 
