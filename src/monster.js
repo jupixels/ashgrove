@@ -163,7 +163,7 @@ export function createMonster({ A, scene, audio }) {
     if (door && !door.open && m.distanceTo(next) < 2.4) door.openNow();
     tmp.set(next.x - group.position.x, 0, next.z - group.position.z);
     const d = tmp.length();
-    if (d < 0.25) { m.path.shift(); return d; }
+    if (d < 0.25) { m.path.shift(); return m.distanceTo(goal); } // (how far is left to the goal, not to this corner)
     tmp.normalize();
     group.position.addScaledVector(tmp, Math.min(d, speed * m.speedScale * dt));
     const yaw = Math.atan2(tmp.x, tmp.z);
