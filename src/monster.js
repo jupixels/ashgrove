@@ -5,11 +5,6 @@
 //   chase       sees you: runs at you, re-pathing as you move
 //   search      lost you: tries the hiding places near where it last saw/heard you (the ones you've used before
 //               first), then looks around, then goes back to patrolling
-//   listen      now and then on patrol it just stops, and listens. Its footsteps stop with it.
-//
-// It hunts by sound, so it goes quiet when it's close: homing in on a sound you made, or creeping up to a locker to
-// try the door, it barely makes a sound of its own. The footsteps you've learned to track fade out exactly when
-// it matters.
 //
 // Story scenes take it over with mode = 'script' and place/animate it directly.
 import * as THREE from 'three';
@@ -17,9 +12,7 @@ import { psx } from './engine.js';
 import { PHONE_LAYER } from './world.js';
 
 const SCALE = 1.35;
-const SPEED = { patrol: 1.3, investigate: 2.1, chase: 3.8, search: 1.0, creep: 1.05 };
-const CREEP_NEAR = 11;          // homing in on a sound you made: this close, it slows down and goes quiet
-const QUIET_KINDS = ['step', 'gasp', 'glass']; // small sounds it stalks; a crash or a thrown bottle it just goes to
+const SPEED = { patrol: 1.3, investigate: 2.1, chase: 3.8, search: 1.0 };
 const spotKey = (s) => `${s.x},${s.z}`;
 
 export function createMonster({ A, scene, audio }) {
@@ -81,7 +74,7 @@ export function createMonster({ A, scene, audio }) {
     speedScale: 1, hearScale: 1, sightScale: 1,   // set per floor and difficulty
     lockerChecks: 2,                              // how many hiding places it tries when it loses you (difficulty)
     habits: null,                                 // () => { "x,z": times you've hidden there } on this floor
-    stalk: false, creeping: false, checks: [], checkT: 0, listenIn: 30, listenTurn: 1,
+    checks: [], checkT: 0,
     route: 0, routeI: 0,                          // which patrol route it's walking, and where along it
   };
   const tmp = new THREE.Vector3();
@@ -110,9 +103,7 @@ export function createMonster({ A, scene, audio }) {
     m.suspicion = 0;
     m.sawHide = false;
     m.heardBreath = false;
-    m.stalk = m.creeping = false;
     m.checks = [];
-    m.listenIn = 18 + Math.random() * 20;
     m.route = Math.floor(Math.random() * 2); // start on either patrol route
     m.routeI = 0;
     if (state === 'chase') anim('run');
@@ -154,15 +145,14 @@ export function createMonster({ A, scene, audio }) {
 
   m.distanceTo = (v) => Math.hypot(group.position.x - v.x, group.position.z - v.z);
 
-  // somebody made a noise of this loudness (metres it carries). Standing still, listening, it hears much further.
-  m.hear = (pos, radius, kind) => {
+  // somebody made a noise of this loudness (metres it carries)
+  m.hear = (pos, radius) => {
     if (m.mode !== 'ai' || m.state === 'chase' || m.state === 'stunned') return;
-    if (m.distanceTo(pos) > radius * m.hearScale * (m.state === 'listen' ? 1.6 : 1)) return;
+    if (m.distanceTo(pos) > radius * m.hearScale) return;
     m.state = 'investigate';
     m.target = pos.clone();
     m.path = [];
     m.checks = [];
-    m.stalk = QUIET_KINDS.includes(kind); // something small, something alive: it goes quietly
     if (m.growlT <= 0) { audio.play('monster_clicking', { volume: Math.max(0.25, near(m.playerDist ?? 20, 50)), pos: group.position }); m.growlT = 4; }
   };
 
@@ -253,7 +243,6 @@ export function createMonster({ A, scene, audio }) {
     if (player.hidden && m.state === 'chase' && m.lostT < 0.6 && dist < 12) m.sawHide = true;
 
     let moveSpeed = 0;
-    m.creeping = false;
     let trying = null; // the hiding place it has its hand on right now
     if (m.state === 'chase') {
       m.lostT += sees ? 0 : dt;
@@ -263,19 +252,16 @@ export function createMonster({ A, scene, audio }) {
       if (m.lostT > 3.5 && !m.sawHide) startSearch(m.lastSeen, 5);
       if (player.hidden && m.sawHide && left < 1.0) { events.caught(m.heardBreath ? 'breath' : 'dragged'); return; }
     } else if (m.state === 'investigate') {
-      // a sound you made: it comes fast, then the last stretch slowly, and almost silently
-      m.creeping = m.stalk && m.distanceTo(m.target) < CREEP_NEAR;
-      moveSpeed = m.creeping ? SPEED.creep : SPEED.investigate;
+      moveSpeed = SPEED.investigate;
       const left = goTo(m.target, moveSpeed, dt);
       if (left < 0.8) startSearch(m.target, 4);
     } else if (m.state === 'search') {
       const spot = m.checks[0];
-      if (spot && m.checkT <= 0) { // creeping up to the next hiding place
-        m.creeping = true;
-        moveSpeed = SPEED.creep;
+      if (spot && m.checkT <= 0) { // walking up to the next hiding place
+        moveSpeed = SPEED.search;
         m.checkWalk = (m.checkWalk || 0) + dt;
         if (m.checkWalk > 14) { m.checks.shift(); m.checkWalk = 0; } // can't get to it: never mind that one
-        else if (goTo(spot.outside, SPEED.creep, dt) < 0.45) {
+        else if (goTo(spot.outside, SPEED.search, dt) < 0.45) {
           m.checkWalk = 0;
           m.checkT = 2.2 + Math.random() * 1.2; // (short enough that held breath lasts it, if you don't panic)
           m.path = [];
@@ -290,21 +276,7 @@ export function createMonster({ A, scene, audio }) {
         m.searchT -= dt;
         if (m.searchT <= 0) { m.state = 'patrol'; m.target = null; m.path = []; }
       }
-    } else if (m.state === 'listen') {
-      // stopped dead in the corridor, turning slowly, listening
-      m.searchT -= dt;
-      group.rotation.y += m.listenTurn * 0.3 * dt;
-      if (m.searchT <= 0) { m.state = 'patrol'; m.path = []; }
     } else { // patrol
-      // every so often, when you're near enough to hear its footsteps stop, it stops and listens
-      m.listenIn -= dt;
-      if (m.listenIn <= 0 && dist < 28 && dist > 5) {
-        m.listenIn = 22 + Math.random() * 26;
-        m.state = 'listen';
-        m.searchT = 3 + Math.random() * 3.5;
-        m.listenTurn = Math.random() < 0.5 ? -1 : 1;
-        audio.play('monster_sniff', { volume: 0.7 * near(dist, 30), pos: group.position });
-      }
       if (!m.target || m.distanceTo(m.target) < 0.8) {
         const routes = (f.def.routes || []).map((r) => r.map((n) => f.wp[n]).filter(Boolean)).filter((r) => r.length);
         if (routes.length) {
@@ -321,19 +293,19 @@ export function createMonster({ A, scene, audio }) {
       if (m.state === 'patrol') { goTo(m.target, SPEED.patrol, dt); moveSpeed = SPEED.patrol; }
     }
     const clip = m.state === 'chase' ? 'run' : moveSpeed ? 'walk' : m.state === 'search' && !trying ? 'search' : 'idle';
-    anim(clip, { speed: m.state === 'chase' ? 1.15 : m.creeping ? 0.6 : 1 });
+    anim(clip, { speed: m.state === 'chase' ? 1.15 : 1 });
 
     // heavy footsteps, each one as a foot comes down: loud close by, heard a long way off
     if (moveSpeed && dist < 45) {
       footfalls(dt, () => {
-        const v = 1.8 * near(dist, 45) ** 1.2 * (m.creeping ? 0.1 : 1); // creeping: hardly a sound
+        const v = 1.8 * near(dist, 45) ** 1.2;
         if (v < 0.03) return;
         // one of its three footsteps (never the same twice running), at its feet; now and then the tubes drag
         m.lastStep = (m.lastStep + 1 + Math.floor(Math.random() * 2)) % 3 || 0;
         const at = new THREE.Vector3(group.position.x, 0.15, group.position.z);
         const name = audio.buffers && audio.buffers.monster_step_1 ? `monster_step_${m.lastStep + 1}` : 'monster_footstep_heavy';
         audio.play(name, { volume: v, pos: at });
-        if (!m.creeping && Math.random() < 0.15) audio.play('monster_drag_tubes', { volume: v * 0.6, pos: at });
+        if (Math.random() < 0.15) audio.play('monster_drag_tubes', { volume: v * 0.6, pos: at });
       });
     }
 
@@ -346,7 +318,7 @@ export function createMonster({ A, scene, audio }) {
       m.suspicion += player.breathHeld ? -dt : dt * (trying === player.hidden ? 1.3 : 1);
       m.suspicion = Math.max(0, m.suspicion);
       if (m.suspicion > 1.3) { m.sawHide = true; m.heardBreath = true; m.state = 'chase'; m.lastSeen = pp.clone(); }
-      if ((m.state === 'patrol' || m.state === 'listen') && m.suspicion > 0.4) startSearch(pp, 4);
+      if (m.state === 'patrol' && m.suspicion > 0.4) startSearch(pp, 4);
     } else m.suspicion = Math.max(0, m.suspicion - dt);
   };
 

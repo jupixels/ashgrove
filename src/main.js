@@ -46,7 +46,7 @@ const game = { state: 'menu', save: null, floor: null, taken: new Set(), overlay
 const view = { scene, camera };
 
 const monster = createMonster({ A, scene, audio });
-const player = createPlayer({ camera, scene, audio, ui, settings, onNoise: (pos, r, kind) => monster.hear(pos, r, kind) });
+const player = createPlayer({ camera, scene, audio, ui, settings, onNoise: (pos, r) => monster.hear(pos, r) });
 player.yaw = () => camera.rotation.y;
 const maya = setupMaya(A.models.maya);
 maya.group.visible = false;
